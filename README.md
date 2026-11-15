@@ -1,2 +1,30 @@
-# My-days-and-your-days
-App para llevar el control de una pareja o mujer en sus dias donde la regla ataca...continuara
+# My Days 🌸
+
+App para llevar el control del ciclo menstrual — para ella y para su pareja ("my days and your days").
+
+Hecha con **React 18 + Vite**. Los datos se guardan solo en el dispositivo (`localStorage`).
+
+## Cómo correrla
+
+```bash
+npm install
+npm run dev      # abre http://localhost:5173
+npm test         # tests unitarios (Vitest)
+npm run build    # build de producción en dist/
+```
+
+## Estructura
+
+```
+src/
+  lib/          lógica pura (fechas y motor de predicción) + tests
+  state/        estado global (Context + localStorage) y planes Gratis/Premium
+  components/   anillo del ciclo, calendario, registro diario, candados Premium
+  screens/      Onboarding, Hoy, Calendario, Análisis, Ajustes, Planes, PIN
+  styles.css    temas claro (blanco/rosa) y noche (azul/rosa oscuro)
+docs/ANALISIS-Y-ROADMAP.md   análisis de competencia y plan hasta la venta
+```
+
+Qué es Premium se define en un solo lugar: `src/state/plans.js`.
+
+> Las predicciones son estimaciones y no sirven como método anticonceptivo.
