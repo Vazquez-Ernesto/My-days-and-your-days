@@ -268,3 +268,10 @@ textarea, .input {
 .pin__pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 14px; }
 .pin__pad button { height: 72px; border-radius: 50%; background: var(--surface); font-size: 1.5rem; font-weight: 700; border: 1px solid var(--border); }
 @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+/* ===== v0.2: recordatorios ===== */
+.reminder { display: flex; gap: 12px; align-items: center; border-left: 6px solid var(--primary); padding: 12px 14px; }
+.reminder__icon { font-size: 1.4rem; }
+.switch-row--flat { padding: 0; background: none; }
+.switch-row--flat h3 { margin: 0; }
+.setting-row input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--primary); }

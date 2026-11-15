@@ -10,7 +10,9 @@ Hecha con **React 18 + Vite**. Los datos se guardan solo en el dispositivo (`loc
 npm install
 npm run dev      # abre http://localhost:5173
 npm test         # tests unitarios (Vitest)
+npm run test:e2e # tests E2E (Playwright, compila y levanta la app sola)
 npm run build    # build de producción en dist/
+npm run preview  # sirve el build (acá sí funciona offline / instalable)
 ```
 
 ## Estructura
@@ -22,6 +24,8 @@ src/
   components/   anillo del ciclo, calendario, registro diario, candados Premium
   screens/      Onboarding, Hoy, Calendario, Análisis, Ajustes, Planes, PIN
   styles.css    temas claro (blanco/rosa) y noche (azul/rosa oscuro)
+public/         manifest, service worker (offline) e íconos
+tests/e2e/      tests Playwright + helpers (page object, fecha congelada, mocks)
 docs/ANALISIS-Y-ROADMAP.md   análisis de competencia y plan hasta la venta
 ```
 

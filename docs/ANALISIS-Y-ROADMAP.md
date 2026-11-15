@@ -40,11 +40,17 @@ reclamos de marca/copyright y rechazo en las tiendas.
 
 ## 3. Hoja de ruta hacia la venta
 
-### v0.2 — PWA instalable (1–2 semanas)
-- [ ] `manifest.json` + service worker → se instala en el celular y funciona offline
-- [ ] Recordatorios (notificaciones) X días antes del período
-- [ ] Tests E2E con Playwright en CI (GitHub Actions)
-- [ ] Ícono y nombre definitivo (verificar que la marca esté libre)
+### v0.2 — PWA instalable ✅
+- [x] `manifest.webmanifest` + service worker → se instala en el celular y funciona offline
+- [x] Botón "Instalar app" (Android/Chrome) e instrucciones para iPhone
+- [x] Recordatorios: aviso en la app + notificación del sistema (1 a 5 días antes, ventana fértil, ovulación, atraso), una sola vez por día
+- [x] 16 tests E2E con Playwright (fecha congelada, page object, mocks de notificaciones) + CI en GitHub Actions
+- [x] Ícono propio (luna creciente)
+- [ ] Nombre definitivo (verificar que la marca esté libre)
+
+> Limitación conocida: en la web, la notificación sale cuando se abre la app.
+> Los avisos con la app cerrada requieren *Local Notifications* de Capacitor (v0.3)
+> o un servidor de push — por eso quedan para la versión de tiendas.
 
 ### v0.3 — App en tiendas (3–4 semanas)
 - [ ] Empaquetar con **Capacitor** (reusa este mismo código React) → Android e iOS

@@ -114,7 +114,7 @@ export function cycleSummary(periods, settings, today) {
   else phase = 'luteal';
 
   return {
-    cycleDay, cycleLength, periodLength, daysUntilNext, expectedNext, phase,
+    cycleDay, cycleLength, periodLength, daysUntilNext, expectedNext, phase, ovulationDay,
     onPeriod: phase === 'menstrual',
     periodDay: phase === 'menstrual' ? diffDays(today, last.start) + 1 : null,
   };

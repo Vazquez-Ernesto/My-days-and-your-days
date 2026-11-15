@@ -16,7 +16,7 @@ function Stepper({ value, onChange, min, max, unit }) {
 export { Stepper };
 
 export default function Onboarding() {
-  const { today, update } = useStore();
+  const { state, today, update } = useStore();
   const [step, setStep] = useState(0);
   const [lastStart, setLastStart] = useState(addDays(today, -7));
   const [cycleLength, setCycleLength] = useState(28);
@@ -25,7 +25,7 @@ export default function Onboarding() {
   const finish = () => update({
     onboarded: true,
     periodDays: startPeriod([], lastStart, periodLength),
-    settings: { cycleLength, periodLength, theme: 'system', pin: null },
+    settings: { ...state.settings, cycleLength, periodLength },
   });
 
   const steps = [

@@ -5,7 +5,7 @@ import { PHASES, startPeriod, endPeriod } from '../lib/cycle.js';
 import { formatLong, diffDays } from '../lib/dates.js';
 
 export default function Home({ onLog, onUpgrade }) {
-  const { state, summary, predictions, today, averages, setPeriodDays } = useStore();
+  const { state, summary, predictions, today, averages, setPeriodDays, reminders } = useStore();
 
   const periodStarted = () => setPeriodDays(startPeriod(state.periodDays, today, averages.periodLength));
   const periodEnded = () => setPeriodDays(endPeriod(state.periodDays, today));
@@ -34,6 +34,13 @@ export default function Home({ onLog, onUpgrade }) {
         <p className="muted">{formatLong(today)}</p>
         <h1>Hola 🌙</h1>
       </header>
+
+      {reminders.map((r) => (
+        <div key={r.id} className="card reminder" role="status">
+          <span className="reminder__icon">🔔</span>
+          <div><strong>{r.title}</strong><p className="muted small">{r.body}</p></div>
+        </div>
+      ))}
 
       <CycleRing summary={summary}>
         <span className="ring__big">{big}</span>

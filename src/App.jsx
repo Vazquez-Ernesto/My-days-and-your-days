@@ -8,6 +8,20 @@ import Settings from './screens/Settings.jsx';
 import Plans from './screens/Plans.jsx';
 import PinLock from './screens/PinLock.jsx';
 import DayLogSheet from './components/DayLogSheet.jsx';
+import { permission, showNotification } from './lib/notifications.js';
+
+// Envía como notificación del sistema los recordatorios de hoy que aún no se enviaron.
+function useReminderNotifications() {
+  const { state, reminders, markNotified } = useStore();
+  const enabled = state.settings.reminders.enabled;
+  useEffect(() => {
+    if (!enabled || permission() !== 'granted') return;
+    const pending = reminders.filter((r) => !state.notified.includes(r.id));
+    if (!pending.length) return;
+    pending.forEach((r) => showNotification(r.title, { body: r.body, tag: r.type }).catch(() => {}));
+    markNotified(pending.map((r) => r.id));
+  }, [enabled, reminders, state.notified, markNotified]);
+}
 
 const Icon = ({ d }) => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -42,6 +56,7 @@ export default function App() {
   const [showPlans, setShowPlans] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   useTheme(state.settings.theme);
+  useReminderNotifications();
 
   if (!state.onboarded) return <div className="app"><Onboarding /></div>;
   if (state.settings.pin && can('pinLock') && !unlocked) {
