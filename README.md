@@ -6,6 +6,8 @@ Hecha con **React 18 + Vite**. Los datos se guardan solo en el dispositivo (`loc
 
 ## Cómo correrla
 
+Requisito: **Node.js 20.19 o más nuevo** (`node -v` para verlo).
+
 ```bash
 npm install
 npm run dev      # abre http://localhost:5173
@@ -13,6 +15,13 @@ npm test         # tests unitarios (Vitest)
 npm run test:e2e # tests E2E (Playwright, compila y levanta la app sola)
 npm run build    # build de producción en dist/
 npm run preview  # sirve el build (acá sí funciona offline / instalable)
+```
+
+### En Windows PowerShell 5.1
+PowerShell 5.1 no acepta `&&`. Corré los comandos de a uno, o separalos con `;`:
+
+```powershell
+npm run build; npm run preview
 ```
 
 ## Estructura
