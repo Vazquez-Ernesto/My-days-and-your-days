@@ -113,3 +113,59 @@ describe('dayStatus', () => {
     expect(dayStatus('2026-11-22', ctx)).toBe(null);
   });
 });
+
+import { cycleDayOf, phaseOfDay, pregnancyChance, nextFertileWindow, symptomPattern, symptomCounts } from './cycle.js';
+
+describe('v0.3: día del ciclo, fases y probabilidad', () => {
+  const periodDays = [...startPeriod([], '2026-10-04', 5), ...startPeriod([], '2026-11-01', 5)];
+  const periods = groupPeriods(periodDays);
+  const predictions = predictCycles(periods, settings, '2026-11-10', 2);
+
+  it('calcula el día del ciclo de cualquier fecha', () => {
+    expect(cycleDayOf('2026-10-04', periods, predictions)).toBe(1);
+    expect(cycleDayOf('2026-10-31', periods, predictions)).toBe(28);
+    expect(cycleDayOf('2026-11-15', periods, predictions)).toBe(15);
+    expect(cycleDayOf('2026-12-01', periods, predictions)).toBe(3); // ciclo previsto que empieza 29/11
+    expect(cycleDayOf('2026-09-01', periods, predictions)).toBe(null);
+  });
+
+  it.each([
+    [3, 'menstrual', 'baja'], [8, 'follicular', 'baja'], [10, 'fertile', 'media'],
+    [13, 'fertile', 'alta'], [15, 'ovulation', 'alta'], [16, 'fertile', 'media'], [20, 'luteal', 'baja'],
+  ])('día %i → fase %s, probabilidad %s', (day, phase, chance) => {
+    expect(phaseOfDay(day, 28, 5)).toBe(phase);
+    expect(pregnancyChance(day, 28, 5)).toBe(chance);
+  });
+
+  it('ventana fértil: próxima, en curso o del siguiente ciclo', () => {
+    expect(nextFertileWindow(periods, settings, predictions, '2026-11-05'))
+      .toMatchObject({ start: '2026-11-10', end: '2026-11-16', active: false, daysUntil: 5 });
+    expect(nextFertileWindow(periods, settings, predictions, '2026-11-12')).toMatchObject({ active: true });
+    expect(nextFertileWindow(periods, settings, predictions, '2026-11-20')).toMatchObject({ start: '2026-12-08' });
+  });
+
+  it('arma el patrón de un síntoma por ciclo', () => {
+    const logs = { '2026-10-05': { symptoms: ['Cólicos'] }, '2026-11-02': { symptoms: ['Cólicos', 'Acné'] } };
+    const rows = symptomPattern('Cólicos', periods, logs, '2026-11-10');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ start: '2026-11-01', current: true, length: 10 });
+    expect(rows[0].days[1]).toBe(true);  // día 2
+    expect(rows[1]).toMatchObject({ start: '2026-10-04', length: 28 });
+    expect(rows[1].days.filter(Boolean)).toHaveLength(1);
+  });
+
+  it('cuenta síntomas por rango y por fase', () => {
+    const logs = {
+      '2026-10-05': { symptoms: ['Cólicos'] },
+      '2026-11-02': { symptoms: ['Cólicos', 'Acné'] },
+      '2026-11-12': { symptoms: ['Hinchazón'] },
+    };
+    const phaseOf = (date) => phaseOfDay(cycleDayOf(date, periods, predictions), 28, 5);
+    expect(symptomCounts(logs, { from: '2026-10-01' })).toEqual({
+      total: 4, top: [['Cólicos', 2], ['Acné', 1], ['Hinchazón', 1]],
+    });
+    expect(symptomCounts(logs, { from: '2026-11-01' }).total).toBe(3);
+    expect(symptomCounts(logs, { from: '2026-10-01', phase: 'fertile', phaseOf }).top).toEqual([['Hinchazón', 1]]);
+    expect(symptomCounts(logs, { from: '2026-10-01', phase: 'menstrual', phaseOf }).total).toBe(3);
+  });
+});

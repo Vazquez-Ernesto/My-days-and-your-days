@@ -5,7 +5,7 @@ test('el manifest es válido para instalar la app', async ({ request }) => {
   const res = await request.get('/manifest.webmanifest');
   expect(res.ok()).toBeTruthy();
   const manifest = await res.json();
-  expect(manifest).toMatchObject({ short_name: 'My Days', display: 'standalone', start_url: '/' });
+  expect(manifest).toMatchObject({ short_name: 'My Days', display: 'standalone', start_url: './' });
   expect(manifest.icons.map((i) => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
   for (const icon of manifest.icons) expect((await request.get(icon.src)).ok()).toBeTruthy();
 });

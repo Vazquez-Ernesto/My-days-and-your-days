@@ -1,7 +1,8 @@
 // Service worker de My Days: hace que la app funcione sin internet.
 // Al cambiar algo importante, subí la versión para que se borre la caché vieja.
-const CACHE = 'mydays-v0.2.0';
-const PRECACHE = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon.svg'];
+const CACHE = 'mydays-v0.3.0';
+// Rutas relativas a la ubicación del service worker (funciona también en una subcarpeta)
+const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
@@ -24,8 +25,8 @@ self.addEventListener('fetch', (event) => {
     // Páginas: primero red (para tener la última versión), si falla usamos la caché.
     event.respondWith(
       fetch(request)
-        .then((res) => { caches.open(CACHE).then((c) => c.put('/index.html', res.clone())); return res; })
-        .catch(() => caches.match('/index.html')),
+        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); return res; })
+        .catch(() => caches.match('./index.html')),
     );
     return;
   }
@@ -45,7 +46,7 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window' }).then((wins) => {
       const open = wins.find((w) => 'focus' in w);
-      return open ? open.focus() : self.clients.openWindow('/');
+      return open ? open.focus() : self.clients.openWindow(self.registration.scope);
     }),
   );
 });

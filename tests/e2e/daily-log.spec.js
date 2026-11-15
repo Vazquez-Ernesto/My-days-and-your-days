@@ -7,8 +7,7 @@ test('registrar síntomas, ánimo y nota de un día', async ({ page }) => {
   const app = new App(page);
   await app.goto();
 
-  await page.getByRole('button', { name: 'Registrar día' }).click();
-  const sheet = page.getByRole('dialog');
+  const sheet = await app.openLog();
   await sheet.getByRole('button', { name: /Irritable/ }).click();
   await sheet.getByRole('button', { name: 'Cólicos' }).click();
   await sheet.getByRole('button', { name: 'Hinchazón' }).click();

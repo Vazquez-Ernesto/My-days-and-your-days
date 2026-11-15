@@ -3,17 +3,27 @@ import { App, freezeDate, seed } from './helpers.js';
 
 test.beforeEach(async ({ page }) => { await freezeDate(page); });
 
-test('plan gratis: anuncio visible y gráficos bloqueados', async ({ page }) => {
+test('plan gratis: anuncio visible y funciones Premium bloqueadas', async ({ page }) => {
   await seed(page);
   const app = new App(page);
   await app.goto();
   await expect(page.getByText('Anuncio', { exact: true })).toBeVisible();
-  await app.openTab('Análisis');
-  await expect(page.getByText('Disponible en Premium')).toBeVisible();
-  await expect(page.getByText('Largo de tus ciclos')).toHaveCount(0);
+  await app.openTab('Yo');
+  await expect(page.getByText('Patrones de síntomas por ciclo')).toBeVisible();
+  await expect(page.getByText('Disponible en Premium')).toHaveCount(2);
+  await expect(page.getByText('Largo de tus ciclos', { exact: true })).toHaveCount(0);
 });
 
-test('mejorar a Premium desbloquea gráficos y quita anuncios', async ({ page }) => {
+test('la vista anual del calendario pide Premium', async ({ page }) => {
+  await seed(page);
+  const app = new App(page);
+  await app.goto();
+  await app.openTab('Calendario');
+  await page.getByRole('tab', { name: 'Año' }).click();
+  await expect(page.getByRole('heading', { name: 'My Days Premium' })).toBeVisible();
+});
+
+test('mejorar a Premium desbloquea gráficos, vista anual y quita anuncios', async ({ page }) => {
   await seed(page);
   const app = new App(page);
   await app.goto();
@@ -22,8 +32,12 @@ test('mejorar a Premium desbloquea gráficos y quita anuncios', async ({ page })
   await page.getByRole('button', { name: 'Probar 7 días gratis' }).click();
 
   await expect(page.getByText('Anuncio', { exact: true })).toHaveCount(0);
-  await app.openTab('Análisis');
+  await app.openTab('Yo');
   await expect(page.getByText('Largo de tus ciclos')).toBeVisible();
+  await expect(page.getByText('Patrón por ciclo')).toBeVisible();
+  await app.openTab('Calendario');
+  await page.getByRole('tab', { name: 'Año' }).click();
+  await expect(page.getByRole('button', { name: 'Noviembre 2026' })).toBeVisible();
   expect((await app.savedState()).plan).toBe('premium');
 });
 

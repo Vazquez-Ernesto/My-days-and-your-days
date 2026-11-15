@@ -2,49 +2,9 @@ import { useState } from 'react';
 import { useStore } from '../state/store.jsx';
 import { Stepper } from './Onboarding.jsx';
 import { PremiumGate, PremiumBadge } from '../components/Premium.jsx';
+import Header from '../components/Header.jsx';
 import { PLANS } from '../state/plans.js';
-import { permission, requestPermission } from '../lib/notifications.js';
 import { useInstallPrompt, isStandalone, isIOS } from '../lib/install.js';
-
-const PERMISSION_TEXT = {
-  granted: 'Notificaciones permitidas.',
-  denied: 'Bloqueaste las notificaciones. Activalas desde los ajustes del navegador.',
-  default: 'Te vamos a pedir permiso para notificarte.',
-  unsupported: 'Este navegador no soporta notificaciones. En iPhone, primero instalá la app en tu inicio.',
-};
-
-function RemindersCard() {
-  const { state, updateReminders } = useStore();
-  const prefs = state.settings.reminders;
-  const [perm, setPerm] = useState(permission());
-
-  const toggle = async () => {
-    if (prefs.enabled) return updateReminders({ enabled: false });
-    updateReminders({ enabled: true }); // el switch responde al instante
-    setPerm(await requestPermission());
-  };
-
-  return (
-    <div className="card">
-      <label className="switch-row switch-row--flat">
-        <h3>Recordatorios 🔔</h3>
-        <input type="checkbox" checked={prefs.enabled} onChange={toggle} aria-label="Activar recordatorios" />
-      </label>
-      {prefs.enabled && (
-        <>
-          <p className="muted small">{PERMISSION_TEXT[perm]}</p>
-          <div className="setting-row"><span>Avisarme antes del período</span>
-            <Stepper value={prefs.daysBefore} min={1} max={5} unit="d" onChange={(v) => updateReminders({ daysBefore: v })} /></div>
-          <label className="setting-row">
-            <span>Ventana fértil y ovulación</span>
-            <input type="checkbox" checked={prefs.fertile} onChange={(e) => updateReminders({ fertile: e.target.checked })} />
-          </label>
-          <p className="muted small">Por ahora el aviso llega cuando abrís la app. Los avisos con la app cerrada llegan con la versión de tiendas.</p>
-        </>
-      )}
-    </div>
-  );
-}
 
 function InstallCard() {
   const { available, install } = useInstallPrompt();
@@ -84,14 +44,15 @@ function exportCSV(state) {
   URL.revokeObjectURL(a.href);
 }
 
-export default function Settings({ onUpgrade }) {
+export default function Settings({ onUpgrade, onBack }) {
   const { state, updateSettings, update, reset } = useStore();
   const { settings } = state;
   const [pinDraft, setPinDraft] = useState('');
+  const [confirmReset, setConfirmReset] = useState(false);
 
   return (
     <section className="screen">
-      <header className="screen__head"><h1>Ajustes</h1></header>
+      <Header title="Ajustes" onBack={onBack} />
 
       <div className="card plan-card">
         <div>
@@ -104,7 +65,6 @@ export default function Settings({ onUpgrade }) {
       </div>
 
       <InstallCard />
-      <RemindersCard />
 
       <div className="card">
         <h3>Apariencia</h3>
@@ -158,9 +118,17 @@ export default function Settings({ onUpgrade }) {
       <div className="card">
         <h3>Datos</h3>
         <p className="muted small">Todo se guarda solo en este dispositivo. No hay cuentas ni servidores.</p>
-        <button className="btn btn--danger btn--small" onClick={() => {
-          if (confirm('¿Borrar todos tus datos? No se puede deshacer.')) reset();
-        }}>Borrar todo</button>
+        {confirmReset ? (
+          <div className="confirm">
+            <p><strong>¿Borrar todos tus datos?</strong> No se puede deshacer.</p>
+            <div className="row">
+              <button className="btn btn--soft btn--small" onClick={() => setConfirmReset(false)}>Cancelar</button>
+              <button className="btn btn--danger btn--small" onClick={reset}>Sí, borrar todo</button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn btn--danger btn--small" onClick={() => setConfirmReset(true)}>Borrar todo</button>
+        )}
       </div>
     </section>
   );

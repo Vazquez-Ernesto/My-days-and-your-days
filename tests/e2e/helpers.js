@@ -2,9 +2,13 @@ import { expect } from '@playwright/test';
 
 export const TODAY = '2026-11-20';
 
-/** Congela la fecha del navegador para que los tests den siempre lo mismo. */
-export async function freezeDate(page, iso = TODAY) {
-  await page.clock.setFixedTime(new Date(`${iso}T10:00:00`));
+// Debe coincidir con timezoneId de playwright.config.js (Argentina: UTC-3, sin horario de verano).
+// Ojo: sin el desfase explícito, Node interpretaría la hora en SU zona horaria, no en la del navegador.
+export const TZ_OFFSET = '-03:00';
+
+/** Congela fecha y hora (hora local del navegador) para que los tests den siempre lo mismo. */
+export async function freezeDate(page, iso = TODAY, time = '10:00') {
+  await page.clock.setFixedTime(new Date(`${iso}T${time}:00${TZ_OFFSET}`));
 }
 
 /** Arma N días consecutivos desde `start`. */
@@ -71,6 +75,8 @@ export class App {
   async goto() { await this.page.goto('/'); }
   tab(name) { return this.page.getByRole('navigation').getByRole('button', { name }); }
   async openTab(name) { await this.tab(name).click(); }
+  async openSettings() { await this.page.getByRole('button', { name: 'Ajustes' }).click(); }
+  async openLog() { await this.tab('Registrar').click(); return this.page.getByRole('dialog'); }
   async expectRing(big, small) {
     await expect(this.ringBig).toHaveText(big);
     await expect(this.ringSmall).toHaveText(small);

@@ -3,37 +3,34 @@ import { useStore } from './state/store.jsx';
 import Onboarding from './screens/Onboarding.jsx';
 import Home from './screens/Home.jsx';
 import CalendarScreen from './screens/CalendarScreen.jsx';
-import Stats from './screens/Stats.jsx';
+import Me from './screens/Me.jsx';
+import Reminders from './screens/Reminders.jsx';
 import Settings from './screens/Settings.jsx';
 import Plans from './screens/Plans.jsx';
 import PinLock from './screens/PinLock.jsx';
 import DayLogSheet from './components/DayLogSheet.jsx';
+import Icon from './components/Icons.jsx';
 import { permission, showNotification } from './lib/notifications.js';
+import { isTimeReached } from './lib/reminders.js';
 
-// Envía como notificación del sistema los recordatorios de hoy que aún no se enviaron.
+// Envía como notificación del sistema los recordatorios de hoy cuya hora ya llegó.
 function useReminderNotifications() {
   const { state, reminders, markNotified } = useStore();
   const enabled = state.settings.reminders.enabled;
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000); // revisamos cada minuto
+    return () => clearInterval(id);
+  }, []);
   useEffect(() => {
     if (!enabled || permission() !== 'granted') return;
-    const pending = reminders.filter((r) => !state.notified.includes(r.id));
+    const now = new Date();
+    const pending = reminders.filter((r) => !state.notified.includes(r.id) && isTimeReached(r.time, now));
     if (!pending.length) return;
     pending.forEach((r) => showNotification(r.title, { body: r.body, tag: r.type }).catch(() => {}));
     markNotified(pending.map((r) => r.id));
-  }, [enabled, reminders, state.notified, markNotified]);
+  }, [enabled, reminders, state.notified, markNotified, tick]);
 }
-
-const Icon = ({ d }) => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d={d} />
-  </svg>
-);
-const TABS = [
-  { id: 'home', label: 'Hoy', icon: 'M12 21s-7-4.5-9.3-9A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z' },
-  { id: 'calendar', label: 'Calendario', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4' },
-  { id: 'stats', label: 'Análisis', icon: 'M5 20V12M12 20V5M19 20v-9' },
-  { id: 'settings', label: 'Ajustes', icon: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4' },
-];
 
 function useTheme(theme) {
   useEffect(() => {
@@ -49,11 +46,20 @@ function useTheme(theme) {
   }, [theme]);
 }
 
+const TABS = [
+  { id: 'home', label: 'Hoy', icon: 'heart' },
+  { id: 'calendar', label: 'Calendario', icon: 'calendar' },
+  { id: 'log', label: 'Registrar', icon: 'plus', action: true },
+  { id: 'reminders', label: 'Recordatorios', short: 'Avisos', icon: 'bell' },
+  { id: 'me', label: 'Yo', icon: 'user' },
+];
+
 export default function App() {
-  const { state, can } = useStore();
+  const { state, can, today } = useStore();
   const [tab, setTab] = useState('home');
   const [logDate, setLogDate] = useState(null);
   const [showPlans, setShowPlans] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   useTheme(state.settings.theme);
   useReminderNotifications();
@@ -63,21 +69,30 @@ export default function App() {
     return <div className="app"><PinLock pin={state.settings.pin} onUnlock={() => setUnlocked(true)} /></div>;
   }
 
-  const upgrade = () => setShowPlans(true);
+  const nav = { onLog: setLogDate, onUpgrade: () => setShowPlans(true), onSettings: () => setShowSettings(true) };
   const screens = {
-    home: <Home onLog={setLogDate} onUpgrade={upgrade} />,
-    calendar: <CalendarScreen onLog={setLogDate} />,
-    stats: <Stats onUpgrade={upgrade} />,
-    settings: <Settings onUpgrade={upgrade} />,
+    home: <Home {...nav} />,
+    calendar: <CalendarScreen {...nav} />,
+    reminders: <Reminders {...nav} />,
+    me: <Me {...nav} />,
   };
 
   return (
     <div className="app">
-      <main className="app__main">{screens[tab]}</main>
-      <nav className="tabbar">
+      <main className="app__main">
+        {showSettings ? <Settings {...nav} onBack={() => setShowSettings(false)} /> : screens[tab]}
+      </main>
+      <nav className="tabbar" aria-label="Navegación principal">
         {TABS.map((t) => (
-          <button key={t.id} className={tab === t.id ? 'is-on' : ''} onClick={() => setTab(t.id)}>
-            <Icon d={t.icon} />{t.label}
+          <button key={t.id} aria-label={t.label}
+            className={`tabbar__btn ${t.action ? 'tabbar__btn--action' : ''} ${tab === t.id && !showSettings ? 'is-on' : ''}`}
+            onClick={() => {
+              if (t.action) return setLogDate(today);
+              setShowSettings(false);
+              setTab(t.id);
+            }}>
+            <span className="tabbar__icon"><Icon name={t.icon} size={t.action ? 20 : 22} strokeWidth={t.action ? 3 : 2} /></span>
+            <span className="tabbar__label" aria-hidden="true">{t.short ?? t.label}</span>
           </button>
         ))}
       </nav>

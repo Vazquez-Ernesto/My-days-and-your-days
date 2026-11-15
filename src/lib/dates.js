@@ -52,3 +52,12 @@ export function formatLong(iso) {
   const d = fromISO(iso);
   return `${d.getUTCDate()} de ${MONTHS[d.getUTCMonth()].toLowerCase()}`;
 }
+
+const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+
+export function formatShort(iso) {
+  const d = fromISO(iso);
+  return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`;
+}
+
+export { MONTHS_SHORT };

@@ -142,3 +142,76 @@ export const PHASES = {
   luteal: { label: 'Fase lútea', tip: 'Pueden aparecer síntomas premenstruales.' },
   late: { label: 'Período atrasado', tip: 'Si el atraso continúa, considerá un test o consultar.' },
 };
+
+/** Día del ciclo para cualquier fecha (pasada, actual o futura). null si es anterior a todo registro. */
+export function cycleDayOf(iso, periods, predictions = []) {
+  let start = null;
+  for (const p of periods) if (p.start <= iso) start = p.start;
+  for (const c of predictions) if (c.periodStart <= iso && (!start || c.periodStart > start)) start = c.periodStart;
+  return start ? diffDays(iso, start) + 1 : null;
+}
+
+/** Fase según el día del ciclo. */
+export function phaseOfDay(cycleDay, cycleLength, periodLength) {
+  if (!cycleDay) return null;
+  const ov = cycleLength - LUTEAL_PHASE + 1;
+  if (cycleDay <= periodLength) return 'menstrual';
+  if (cycleDay === ov) return 'ovulation';
+  if (cycleDay >= ov - 5 && cycleDay <= ov + 1) return 'fertile';
+  if (cycleDay < ov) return 'follicular';
+  return 'luteal';
+}
+
+/** Probabilidad estimada de embarazo: 'baja' | 'media' | 'alta'. */
+export function pregnancyChance(cycleDay, cycleLength, periodLength) {
+  if (!cycleDay) return null;
+  const ov = cycleLength - LUTEAL_PHASE + 1;
+  if (cycleDay <= periodLength) return 'baja';
+  if (cycleDay >= ov - 2 && cycleDay <= ov) return 'alta';
+  if (cycleDay >= ov - 5 && cycleDay <= ov + 1) return 'media';
+  return 'baja';
+}
+
+/** Ventana fértil del ciclo actual o del próximo si la actual ya pasó. */
+export function nextFertileWindow(periods, settings, predictions, today) {
+  const candidates = [currentFertile(periods, settings), ...predictions].filter(Boolean);
+  const c = candidates.find((x) => x.fertileEnd >= today);
+  if (!c) return null;
+  return {
+    start: c.fertileStart, end: c.fertileEnd, ovulation: c.ovulation,
+    active: isBetween(today, c.fertileStart, c.fertileEnd),
+    daysUntil: diffDays(c.fertileStart, today),
+  };
+}
+
+/**
+ * Patrón de un síntoma en los últimos ciclos: una fila por ciclo, una celda por día.
+ * Sirve para ver si un síntoma aparece siempre en el mismo momento del ciclo.
+ */
+export function symptomPattern(symptom, periods, logs, today, maxCycles = 3) {
+  const rows = [];
+  for (let i = periods.length - 1; i >= 0 && rows.length < maxCycles; i--) {
+    const start = periods[i].start;
+    const next = periods[i + 1]?.start;
+    const length = next ? diffDays(next, start) : diffDays(today, start) + 1;
+    const days = Array.from({ length }, (_, d) => Boolean(logs[addDays(start, d)]?.symptoms?.includes(symptom)));
+    rows.push({ start, length, current: !next, days, periodLength: periods[i].length });
+  }
+  return rows;
+}
+
+/** Cuenta síntomas desde `from`, opcionalmente filtrando por fase (phaseOf: fecha → fase). */
+export function symptomCounts(logs, { from, phase = 'all', phaseOf = () => null }) {
+  const counts = {};
+  let total = 0;
+  for (const [date, log] of Object.entries(logs)) {
+    if (date < from || !log.symptoms?.length) continue;
+    if (phase !== 'all') {
+      const p = phaseOf(date);
+      const matches = phase === 'fertile' ? (p === 'fertile' || p === 'ovulation') : p === phase;
+      if (!matches) continue;
+    }
+    for (const s of log.symptoms) { counts[s] = (counts[s] ?? 0) + 1; total++; }
+  }
+  return { total, top: Object.entries(counts).sort((a, b) => b[1] - a[1]) };
+}

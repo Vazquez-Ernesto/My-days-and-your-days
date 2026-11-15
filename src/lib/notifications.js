@@ -14,7 +14,8 @@ export async function requestPermission() {
 }
 
 export async function showNotification(title, options) {
-  const opts = { icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', lang: 'es', ...options };
+  const icon = new URL('icons/icon-192.png', document.baseURI).href;
+  const opts = { icon, badge: icon, lang: 'es', ...options };
   // Con service worker la notificación funciona también en Android instalada como app
   const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
   if (reg) return reg.showNotification(title, opts);

@@ -49,16 +49,27 @@ reclamos de marca/copyright y rechazo en las tiendas.
 - [ ] Nombre definitivo (verificar que la marca esté libre)
 
 > Limitación conocida: en la web, la notificación sale cuando se abre la app.
-> Los avisos con la app cerrada requieren *Local Notifications* de Capacitor (v0.3)
+> Los avisos con la app cerrada requieren *Local Notifications* de Capacitor (v0.4)
 > o un servidor de push — por eso quedan para la versión de tiendas.
 
-### v0.3 — App en tiendas (3–4 semanas)
+### v0.3 — Interfaz y funciones nuevas ✅
+A partir de capturas de referencia (solo funciones y patrones de uso, con diseño y colores propios):
+- [x] Barra flotante con botón central **+ Registrar**; Ajustes en el engranaje
+- [x] Pantalla **Recordatorios** con hora configurable: inicio/fin del período, ovulación, ventana fértil, atraso, **píldora** (botón "Tomada") y **cita médica**
+- [x] Calendario: número de día del ciclo en cada celda, modo **Editar período**, vista **Año** (Premium)
+- [x] Hoy: "Día del ciclo", **probabilidad de embarazo**, barra de fases y ventana fértil
+- [x] Pestaña **Yo**: síntomas recientes (filtros por rango y fase), **patrón por ciclo** (Premium), vida sexual, peso, temperatura, cronología
+- [x] Registro diario: relaciones (con/sin protección, orgasmo), peso, temperatura, píldora
+- [x] Publicación automática en GitHub Pages (HTTPS) para instalar en iPhone
+- [ ] Modo pareja ("Compartiendo con Amor"): requiere backend → v0.5
+
+### v0.4 — App en tiendas (3–4 semanas)
 - [ ] Empaquetar con **Capacitor** (reusa este mismo código React) → Android e iOS
 - [ ] Anuncios reales en Gratis con **AdMob** (banner discreto, nunca en el registro)
 - [ ] Compras con **RevenueCat** (simplifica Google Play Billing + App Store y la validación)
 - [ ] Política de privacidad y términos (obligatorio en tiendas para apps de salud)
 
-### v0.4 — Backend para Modo Pareja (4–6 semanas)
+### v0.5 — Backend para Modo Pareja (4–6 semanas)
 - [ ] Backend en **Java (Spring Boot)** — ideal para practicar lo que estás aprendiendo
 - [ ] Cifrado de extremo a extremo de lo compartido; la pareja solo ve fases, no síntomas
 - [ ] Sincronización/backup opcional en la nube (Premium)
