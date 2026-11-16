@@ -2,15 +2,26 @@ import { monthMatrix, MONTHS, WEEKDAYS, fromISO } from '../lib/dates.js';
 import { dayStatus, cycleDayOf } from '../lib/cycle.js';
 import { useStore } from '../state/store.jsx';
 
-function useDayInfo() {
-  const { state, periods, predictions } = useStore();
-  const ctx = { periodDays: state.periodDays, periods, predictions, settings: state.settings };
-  return (iso) => ({ status: dayStatus(iso, ctx), cycleDay: cycleDayOf(iso, periods, predictions), log: state.logs[iso] });
+/**
+ * Info de cada día. Por defecto usa los datos propios; `data` permite mostrar los de otra persona
+ * (vista de la pareja). `hideFertile` oculta fertilidad/ovulación si ella no la comparte.
+ */
+function useDayInfo(data, hideFertile = false) {
+  const store = useStore();
+  const d = data ?? {
+    periodDays: store.state.periodDays, periods: store.periods, predictions: store.predictions,
+    settings: store.state.settings, logs: store.state.logs,
+  };
+  return (iso) => {
+    let status = dayStatus(iso, d);
+    if (hideFertile && (status === 'fertile' || status === 'ovulation')) status = null;
+    return { status, cycleDay: cycleDayOf(iso, d.periods, d.predictions), log: d.logs?.[iso] };
+  };
 }
 
-export function MonthGrid({ year, month, selected, editing, onSelect }) {
+export function MonthGrid({ year, month, selected, editing, onSelect, data, hideFertile }) {
   const { today } = useStore();
-  const info = useDayInfo();
+  const info = useDayInfo(data, hideFertile);
   return (
     <div className={`cal ${editing ? 'is-editing' : ''}`}>
       <div className="cal__grid">
@@ -59,13 +70,13 @@ export function YearGrid({ year, onPickMonth }) {
   );
 }
 
-export function Legend() {
+export function Legend({ hideFertile = false }) {
   return (
     <div className="legend">
       <span><i className="lg lg--period" />Período</span>
       <span><i className="lg lg--predicted" />Previsto</span>
-      <span><i className="lg lg--fertile" />Fértil</span>
-      <span><i className="lg lg--ovulation" />Ovulación</span>
+      {!hideFertile && <span><i className="lg lg--fertile" />Fértil</span>}
+      {!hideFertile && <span><i className="lg lg--ovulation" />Ovulación</span>}
     </div>
   );
 }

@@ -23,7 +23,7 @@ export function AdBanner({ onUpgrade }) {
   return (
     <button className="ad" onClick={onUpgrade}>
       <small>Anuncio</small>
-      <span>✨ Probá Premium 7 días gratis: sin anuncios, gráficos y modo pareja</span>
+      <span>✨ Probá Premium 7 días gratis: sin anuncios, patrones de síntomas y vista anual</span>
     </button>
   );
 }

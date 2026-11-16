@@ -64,5 +64,5 @@ test('borrar todo pide confirmación dentro de la app', async ({ page }) => {
   expect((await app.savedState()).onboarded).toBe(true);
   await page.getByRole('button', { name: 'Borrar todo' }).click();
   await page.getByRole('button', { name: 'Sí, borrar todo' }).click();
-  await expect(page.getByRole('heading', { name: 'Bienvenida a My Days' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Te damos la bienvenida a My Days' })).toBeVisible();
 });

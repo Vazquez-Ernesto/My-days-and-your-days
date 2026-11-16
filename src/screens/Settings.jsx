@@ -3,6 +3,7 @@ import { useStore } from '../state/store.jsx';
 import { Stepper } from './Onboarding.jsx';
 import { PremiumGate, PremiumBadge } from '../components/Premium.jsx';
 import Header from '../components/Header.jsx';
+import PartnerShareCard from '../components/PartnerShareCard.jsx';
 import { PLANS } from '../state/plans.js';
 import { useInstallPrompt, isStandalone, isIOS } from '../lib/install.js';
 
@@ -44,7 +45,7 @@ function exportCSV(state) {
   URL.revokeObjectURL(a.href);
 }
 
-export default function Settings({ onUpgrade, onBack }) {
+export default function Settings({ onUpgrade, onBack, onInvite, onPreview }) {
   const { state, updateSettings, update, reset } = useStore();
   const { settings } = state;
   const [pinDraft, setPinDraft] = useState('');
@@ -63,6 +64,8 @@ export default function Settings({ onUpgrade, onBack }) {
           ? <button className="btn btn--primary btn--small" onClick={onUpgrade}>Mejorar</button>
           : <button className="btn btn--outline btn--small" onClick={() => update({ plan: 'free' })}>Volver a Gratis (demo)</button>}
       </div>
+
+      <PartnerShareCard onInvite={onInvite} onPreview={onPreview} />
 
       <InstallCard />
 
@@ -108,12 +111,6 @@ export default function Settings({ onUpgrade, onBack }) {
         </div>
       </PremiumGate>
 
-      <PremiumGate feature="partnerMode" title="Modo pareja" onUpgrade={onUpgrade}>
-        <div className="card">
-          <h3>Modo pareja 💞</h3>
-          <p className="muted small">Tu pareja podrá ver tus fases y recibir avisos antes de tus días. Próximamente: requiere sincronización en la nube.</p>
-        </div>
-      </PremiumGate>
 
       <div className="card">
         <h3>Datos</h3>

@@ -49,7 +49,7 @@ reclamos de marca/copyright y rechazo en las tiendas.
 - [ ] Nombre definitivo (verificar que la marca esté libre)
 
 > Limitación conocida: en la web, la notificación sale cuando se abre la app.
-> Los avisos con la app cerrada requieren *Local Notifications* de Capacitor (v0.4)
+> Los avisos con la app cerrada requieren *Local Notifications* de Capacitor (v0.6)
 > o un servidor de push — por eso quedan para la versión de tiendas.
 
 ### v0.3 — Interfaz y funciones nuevas ✅
@@ -61,17 +61,26 @@ A partir de capturas de referencia (solo funciones y patrones de uso, con diseñ
 - [x] Pestaña **Yo**: síntomas recientes (filtros por rango y fase), **patrón por ciclo** (Premium), vida sexual, peso, temperatura, cronología
 - [x] Registro diario: relaciones (con/sin protección, orgasmo), peso, temperatura, píldora
 - [x] Publicación automática en GitHub Pages (HTTPS) para instalar en iPhone
-- [ ] Modo pareja ("Compartiendo con Amor"): requiere backend → v0.5
+- [x] Modo pareja → v0.4 (etapa A) y v0.5 (servidor)
 
-### v0.4 — App en tiendas (3–4 semanas)
+### v0.4 — Modo pareja, etapa A ✅
+Diseño completo en [`MODO-PAREJA.md`](MODO-PAREJA.md).
+- [x] Elección de rol: "Llevo mi ciclo" / "Soy la pareja"
+- [x] Él: Hoy con su estado, su momento, consejos "Cómo acompañarla hoy", respuestas rápidas, calendario y avisos
+- [x] Ella: "Mi momento" + deseo, permisos de qué comparte, invitación con QR, "Ver lo que ve tu pareja"
+- [x] Modo pareja gratis (decisión de producto)
+- [ ] Vinculación real entre dos teléfonos → v0.5
+
+### v0.5 — Servidor en Java + Spring Boot (modo pareja, etapa B)
+- [ ] Vinculación, sincronización cifrada de extremo a extremo, Web Push (también avisos con la app cerrada)
+
+### v0.6 — App en tiendas (3–4 semanas)
 - [ ] Empaquetar con **Capacitor** (reusa este mismo código React) → Android e iOS
 - [ ] Anuncios reales en Gratis con **AdMob** (banner discreto, nunca en el registro)
 - [ ] Compras con **RevenueCat** (simplifica Google Play Billing + App Store y la validación)
 - [ ] Política de privacidad y términos (obligatorio en tiendas para apps de salud)
 
-### v0.5 — Backend para Modo Pareja (4–6 semanas)
-- [ ] Backend en **Java (Spring Boot)** — ideal para practicar lo que estás aprendiendo
-- [ ] Cifrado de extremo a extremo de lo compartido; la pareja solo ve fases, no síntomas
+### Después
 - [ ] Sincronización/backup opcional en la nube (Premium)
 
 ### v1.0 — Lanzamiento

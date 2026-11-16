@@ -12,6 +12,7 @@ export const PLANS = {
       'Registro diario: flujo, síntomas, ánimo, relaciones, peso y temperatura',
       'Recordatorios: período, ovulación, píldora y cita médica',
       'Análisis de síntomas, vida sexual y cronología',
+      'Modo pareja: tu pareja ve tu ciclo y tus momentos (gratis por ahora)',
       'Tema claro y oscuro',
     ],
   },
@@ -29,7 +30,6 @@ export const PLANS = {
       'Vista anual del calendario',
       'Exportar datos (CSV) para tu médica/o',
       'Bloqueo con PIN',
-      'Modo pareja: compartí tu calendario',
     ],
   },
 };
@@ -42,7 +42,7 @@ export const FEATURES = {
   yearView: 'premium',
   export: 'premium',
   pinLock: 'premium',
-  partnerMode: 'premium',
+  partnerMode: 'free', // decisión de producto: gratis mientras crecemos
 };
 
 export function hasFeature(plan, feature) {
