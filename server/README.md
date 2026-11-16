@@ -1,0 +1,81 @@
+# My Days — servidor (modo pareja)
+
+API en **Java 21 + Spring Boot 4** que vincula a ella con su pareja y guarda lo que comparten
+**cifrado de extremo a extremo**: el servidor nunca puede leer los datos del ciclo.
+
+## Correrlo en tu PC
+
+Solo necesitás **Java 21** (`java -version`). Maven no hace falta: viene el wrapper `mvnw`.
+
+Windows (PowerShell):
+```powershell
+cd server
+.\mvnw.cmd spring-boot:run
+```
+
+Linux / macOS:
+```bash
+cd server
+./mvnw spring-boot:run
+```
+
+Queda en http://localhost:8080. Probá http://localhost:8080/actuator/health → `{"status":"UP"}`.
+Por defecto usa una base **H2 en memoria** (se borra al apagar): no hay que instalar nada.
+
+## Tests
+
+```powershell
+.\mvnw.cmd test      # unitarios (segundos)
+.\mvnw.cmd verify    # unitarios + integración (levanta el servidor completo)
+```
+
+| Tipo | Archivo | Qué prueba |
+|---|---|---|
+| Unitario | `InviteCodesTest` | formato y normalización de códigos (test parametrizado) |
+| Unitario + Mockito | `PairServiceTest` | reglas: vencimiento, un solo uso, no aceptar la propia invitación… |
+| Integración | `ApiFlowIT` | la API completa por HTTP: flujo ella↔él, permisos, 401/403/404/410, CORS |
+
+La CI (`.github/workflows/server.yml`) corre todo dos veces: con H2 y con **PostgreSQL 16 real**.
+
+## Estructura (por funcionalidad)
+
+```
+src/main/java/com/mydays/
+  device/   registro de teléfonos y autenticación por token (Bearer)
+  pair/     invitaciones y vínculo ella ↔ él (las reglas de negocio)
+  sync/     snapshot cifrado de ella y mensajes (momentos / respuestas)
+  common/   errores en formato estándar, reloj inyectable, CORS
+src/main/resources/
+  application.yml               configuración (perfil por defecto H2, perfil "postgres")
+  db/migration/V1__init.sql     tablas (Flyway)
+```
+
+Cada funcionalidad tiene: **entidad** (tabla) → **repositorio** (acceso a datos) → **servicio** (reglas) → **controlador** (HTTP).
+
+## API
+
+Todas las rutas (salvo registrar el dispositivo) piden `Authorization: Bearer <token>`.
+Los errores vuelven como `{ "status": 410, "code": "INVITE_EXPIRED", "detail": "La invitación venció…" }`.
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| POST | `/api/devices` | cualquiera | registra el teléfono → `{ deviceId, token }` |
+| POST | `/api/pairs` | ella | crea o regenera la invitación (vence en 24 h) |
+| POST | `/api/pairs/join` | él | acepta: `{ "code": "AB2C-D3EF" }` |
+| GET | `/api/pairs/me` | los dos | estado del vínculo: `PENDING` / `ACTIVE` |
+| DELETE | `/api/pairs/{id}` | los dos | desvincular (borra todo lo compartido) |
+| PUT | `/api/pairs/{id}/snapshot` | ella | sube lo que comparte (cifrado) |
+| GET | `/api/pairs/{id}/snapshot` | los dos | descarga lo compartido |
+| POST | `/api/pairs/{id}/messages` | los dos | momento o respuesta (cifrado) |
+| GET | `/api/pairs/{id}/messages?since=` | los dos | mensajes nuevos |
+| GET | `/actuator/health` | hosting | ¿está vivo? |
+
+### Códigos de error
+`UNAUTHORIZED` · `INVITE_NOT_FOUND` · `INVITE_EXPIRED` · `CANNOT_JOIN_OWN_INVITE` · `ALREADY_PAIRED` ·
+`NO_PAIR` · `PAIR_NOT_FOUND` · `NOT_A_MEMBER` · `OWNER_ONLY` · `NO_SNAPSHOT` · `PAIR_NOT_ACTIVE` ·
+`MESSAGE_TOO_LARGE` · `VALIDATION_ERROR` · `MALFORMED_JSON`
+
+## Producción
+
+Perfil `postgres` con las variables `SPRING_PROFILES_ACTIVE=postgres`, `DATABASE_URL`,
+`DATABASE_USER`, `DATABASE_PASSWORD` y `PORT`.

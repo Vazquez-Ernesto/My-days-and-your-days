@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
+    paths-ignore: ['server/**', 'docs/**']
   pull_request:
+    paths-ignore: ['server/**', 'docs/**']
 
 jobs:
   test:
