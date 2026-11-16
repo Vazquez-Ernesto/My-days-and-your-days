@@ -70,7 +70,10 @@ export default function InviteSheet({ onClose }) {
             <button className="btn btn--primary btn--block" onClick={create}>Reintentar</button>
           </>
         ) : !code ? (
-          <p className="muted center" role="status">Creando la invitación…</p>
+          <div className="center stack-sm" role="status">
+            <p className="muted">Creando la invitación…</p>
+            <p className="muted small">Si el servidor estaba en reposo, puede tardar hasta un minuto.</p>
+          </div>
         ) : (
           <>
             <p className="muted small">
