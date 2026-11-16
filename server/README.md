@@ -44,6 +44,7 @@ src/main/java/com/mydays/
   device/   registro de teléfonos y autenticación por token (Bearer)
   pair/     invitaciones y vínculo ella ↔ él (las reglas de negocio)
   sync/     snapshot cifrado de ella y mensajes (momentos / respuestas)
+  push/     notificaciones push: cifrado RFC 8291, firma VAPID, suscripciones, recordatorios programados
   common/   errores en formato estándar, reloj inyectable, CORS
 src/main/resources/
   application.yml               configuración (perfil por defecto H2, perfil "postgres")
@@ -68,12 +69,18 @@ Los errores vuelven como `{ "status": 410, "code": "INVITE_EXPIRED", "detail": "
 | GET | `/api/pairs/{id}/snapshot` | los dos | descarga lo compartido |
 | POST | `/api/pairs/{id}/messages` | los dos | momento o respuesta (cifrado) |
 | GET | `/api/pairs/{id}/messages?since=` | los dos | mensajes nuevos |
+| GET | `/api/push/public-key` | cualquiera | clave pública VAPID para suscribirse |
+| PUT | `/api/push/subscription` | los dos | registra la suscripción push del teléfono |
+| DELETE | `/api/push/subscription` | los dos | desactiva las notificaciones |
+| PUT | `/api/push/schedule` | los dos | reemplaza los recordatorios programados (cifrados) |
+| POST | `/api/push/test` | los dos | manda una notificación de prueba |
 | GET | `/actuator/health` | hosting | ¿está vivo? |
 
 ### Códigos de error
 `UNAUTHORIZED` · `INVITE_NOT_FOUND` · `INVITE_EXPIRED` · `CANNOT_JOIN_OWN_INVITE` · `ALREADY_PAIRED` ·
 `NO_PAIR` · `PAIR_NOT_FOUND` · `NOT_A_MEMBER` · `OWNER_ONLY` · `NO_SNAPSHOT` · `PAIR_NOT_ACTIVE` ·
-`MESSAGE_TOO_LARGE` · `VALIDATION_ERROR` · `MALFORMED_JSON`
+`MESSAGE_TOO_LARGE` · `VALIDATION_ERROR` · `MALFORMED_JSON` · `PUSH_ENDPOINT_NOT_ALLOWED` · `PUSH_KEYS_INVALID` ·
+`NO_PUSH_SUBSCRIPTION` · `SCHEDULE_TOO_LARGE`
 
 ## Producción (Neon)
 

@@ -3,6 +3,8 @@ package com.mydays.sync;
 import com.mydays.common.ApiException;
 import com.mydays.pair.Pair;
 import com.mydays.pair.PairService;
+import com.mydays.push.PushEvents;
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -20,12 +22,15 @@ public class SyncService {
     private final SnapshotRepository snapshots;
     private final MessageRepository messages;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    public SyncService(PairService pairs, SnapshotRepository snapshots, MessageRepository messages, Clock clock) {
+    public SyncService(PairService pairs, SnapshotRepository snapshots, MessageRepository messages, Clock clock,
+                       ApplicationEventPublisher events) {
         this.pairs = pairs;
         this.snapshots = snapshots;
         this.messages = messages;
         this.clock = clock;
+        this.events = events;
     }
 
     /** Solo ella sube su snapshot. */
@@ -58,6 +63,8 @@ public class SyncService {
             throw new ApiException(org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE, "MESSAGE_TOO_LARGE", "El mensaje es demasiado grande");
         }
         Message m = messages.save(new Message(UUID.randomUUID(), pairId, deviceId, body.ciphertext(), body.iv(), Instant.now(clock)));
+        UUID recipient = pair.isOwner(deviceId) ? pair.getPartnerDeviceId() : pair.getOwnerDeviceId();
+        events.publishEvent(new PushEvents.MessagePosted(recipient, body.ciphertext(), body.iv())); // → notificación al otro
         return MessageView.of(m, deviceId);
     }
 

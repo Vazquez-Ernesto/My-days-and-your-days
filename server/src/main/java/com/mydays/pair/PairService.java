@@ -1,6 +1,8 @@
 package com.mydays.pair;
 
 import com.mydays.common.ApiException;
+import com.mydays.push.PushEvents;
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -20,11 +22,14 @@ public class PairService {
     private final PairRepository pairs;
     private final Clock clock;
     private final Duration inviteTtl;
+    private final ApplicationEventPublisher events;
 
-    public PairService(PairRepository pairs, Clock clock, @Value("${app.invite-ttl}") Duration inviteTtl) {
+    public PairService(PairRepository pairs, Clock clock, @Value("${app.invite-ttl}") Duration inviteTtl,
+                       ApplicationEventPublisher events) {
         this.pairs = pairs;
         this.clock = clock;
         this.inviteTtl = inviteTtl;
+        this.events = events;
     }
 
     @Transactional
@@ -59,7 +64,9 @@ public class PairService {
             throw ApiException.conflict("ALREADY_PAIRED", "Este teléfono ya está en otro vínculo. Desvinculalo primero");
         }
         pair.join(partnerId, now);
-        return PairView.of(pairs.save(pair), partnerId);
+        Pair saved = pairs.save(pair);
+        events.publishEvent(new PushEvents.PairJoined(saved.getOwnerDeviceId())); // → "Tu pareja aceptó 💞"
+        return PairView.of(saved, partnerId);
     }
 
     @Transactional(readOnly = true)

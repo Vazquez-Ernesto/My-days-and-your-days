@@ -1,0 +1,22 @@
+name: Mantener despierto el servidor
+
+# El plan gratis de Render duerme el servidor tras 15 min sin tráfico, y dormido no puede
+# mandar los recordatorios programados. Cada 10 minutos le "tocamos la puerta".
+# (GitHub puede demorar las tareas programadas algunos minutos; para recordatorios alcanza.)
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Despertar mydays-server
+        run: |
+          for i in 1 2 3; do
+            if curl -fsS --max-time 90 https://mydays-server.onrender.com/actuator/health; then exit 0; fi
+            sleep 20
+          done
+          exit 1

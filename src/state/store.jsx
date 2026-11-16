@@ -31,7 +31,8 @@ const initialState = {
   partner: { snapshot: null, prefs: DEFAULT_PARTNER_PREFS, seenMomentAt: null, replies: [], myName: '', unlinked: false },
   // Conexión con el servidor (vacía = modo prueba, sin servidor)
   cloud: { deviceId: null, token: null, pairId: null, key: null, status: 'none', inviteCode: null, inviteExpiresAt: null,
-    lastUploadHash: null, messagesSince: null, lastSyncAt: null },
+    lastUploadHash: null, messagesSince: null, lastSyncAt: null,
+    pushEnabled: false, selfKey: null, scheduleHash: null, lastMomentSentAt: null },
 };
 
 function load() {
@@ -137,7 +138,8 @@ export function StoreProvider({ children }) {
       updateCloud: (patch) => setState((s) => ({ ...s, cloud: { ...s.cloud, ...patch } })),
       /** Ella se desvincula: borra la conexión pero conserva su ciclo y su dispositivo registrado. */
       resetPairing: () => setState((s) => ({
-        ...s, cloud: { ...initialState.cloud, deviceId: s.cloud.deviceId, token: s.cloud.token },
+        ...s, cloud: { ...initialState.cloud, deviceId: s.cloud.deviceId, token: s.cloud.token,
+          pushEnabled: s.cloud.pushEnabled, selfKey: s.cloud.selfKey },
         sharing: { ...s.sharing, inbox: [], seenReplyAt: null, inviteCode: null },
       })),
       setPartnerSnapshot: (snapshot) => setState((s) => ({ ...s, partner: { ...s.partner, snapshot } })),

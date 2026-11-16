@@ -28,6 +28,10 @@ management:
 
 app:
   invite-ttl: PT24H        # las invitaciones vencen a las 24 horas (formato ISO-8601)
+  push:
+    # Identifica a quien manda las notificaciones (lo exige el estándar VAPID). Una URL https es válida.
+    subject: ${VAPID_SUBJECT:https://vazquez-ernesto.github.io/My-days-and-your-days/}
+    scheduler-enabled: true
   cors:
     allowed-origins: >-
       http://localhost:5173,http://localhost:4173,https://vazquez-ernesto.github.io

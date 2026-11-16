@@ -42,8 +42,16 @@ Avance:
 - [x] **B2 — App conectada**: cifrado AES-GCM en el teléfono (`src/lib/crypto.js`), cliente de la API (`src/lib/api.js`),
   sincronización (`src/lib/useCloudSync.js`), vincular pegando el link, respuestas de él, desvincular.
   Test E2E con dos navegadores contra el servidor real que verifica que **nada legible viaja por la red**.
-- [ ] **B3 — Hosting** del servidor y la base (requiere crear una cuenta).
-- [ ] **B4 — Notificaciones push** (Web Push / VAPID).
+- [x] **B3 — Hosting**: servidor en Render (`https://mydays-server.onrender.com`), base en Neon (PostgreSQL 18).
+- [x] **B4 — Notificaciones push** (Web Push / VAPID), con la app cerrada:
+  - Al instante: "Tu pareja aceptó", momento de ella → él, respuesta de él → ella.
+  - Programadas: recordatorios de los próximos 7 días (período, píldora, ovulación, cita), cifrados en el teléfono.
+  - El cifrado de Web Push (RFC 8291) y la firma VAPID (RFC 8292) están hechos con la JDK y verificados contra
+    `http_ece` y `crypto` de Node.js. El service worker real se prueba en `src/lib/sw.test.js`.
+  - Claves VAPID generadas por el servidor y guardadas en la base (`app_settings`): no hay secretos que configurar.
+  - Solo se aceptan endpoints de Apple, Google, Mozilla y Microsoft (protección contra SSRF).
+  - `.github/workflows/keepalive.yml` mantiene despierto el servidor gratis de Render para que los avisos salgan a horario.
+  - El servidor conoce la **hora** de cada recordatorio, pero no su contenido.
 
 ### Cifrado de extremo a extremo
 1. Ella genera una clave AES-256-GCM en su teléfono (Web Crypto API).

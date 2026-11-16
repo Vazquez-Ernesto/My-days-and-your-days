@@ -38,7 +38,7 @@ class PairServiceTest {
     @BeforeEach
     void setUp() {
         clock = new MutableClock(T0);
-        service = new PairService(repo, clock, Duration.ofHours(24));
+        service = new PairService(repo, clock, Duration.ofHours(24), event -> { });
     }
 
     /** Solo en los tests donde se guarda algo: save devuelve lo mismo que recibe. */

@@ -1,6 +1,6 @@
 // Service worker de My Days: hace que la app funcione sin internet.
 // Al cambiar algo importante, subí la versión para que se borre la caché vieja.
-const CACHE = 'mydays-v0.5.1';
+const CACHE = 'mydays-v0.6.0';
 // Rutas relativas a la ubicación del service worker (funciona también en una subcarpeta)
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon.svg'];
 
@@ -49,4 +49,60 @@ self.addEventListener('notificationclick', (event) => {
       return open ? open.focus() : self.clients.openWindow(self.registration.scope);
     }),
   );
+});
+
+// ===================== Notificaciones push =====================
+// El servidor manda el contenido CIFRADO; acá lo desciframos con la clave que guardó la app en IndexedDB.
+
+const MOMENTS = {
+  good: '🌸 Bien', meh: '🌻 Más o menos', sad: '🥀 Triste', sensitive: '🥺 Sensible', tired: '😴 Cansada',
+  thinking: '💭 Pensando en ti', missYou: '📞 Extraño tu voz', cuddles: '🤗 Necesito mimos',
+};
+
+function readKey(name) {
+  return new Promise((resolve) => {
+    const req = indexedDB.open('mydays', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('keys');
+    req.onerror = () => resolve(null);
+    req.onsuccess = () => {
+      const db = req.result;
+      const get = db.transaction('keys', 'readonly').objectStore('keys').get(name);
+      get.onsuccess = () => { resolve(get.result ?? null); db.close(); };
+      get.onerror = () => { resolve(null); db.close(); };
+    };
+  });
+}
+
+const fromB64 = (b64) => Uint8Array.from(atob(b64.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+
+async function decrypt(keyName, ciphertext, iv) {
+  const raw = await readKey(keyName);
+  if (!raw || !ciphertext) return null;
+  const key = await crypto.subtle.importKey('raw', fromB64(raw), 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(iv) }, key, fromB64(ciphertext));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+async function buildNotification(data) {
+  const generic = { title: 'My Days', body: 'Tenés novedades 💞', tag: 'mydays' };
+  try {
+    if (data.type === 'test') return { title: '¡Las notificaciones funcionan! 🎉', body: 'Así te van a llegar los avisos de My Days.', tag: 'test' };
+    if (data.type === 'joined') return { title: 'Tu pareja aceptó la invitación 💞', body: 'Ya pueden compartir sus días.', tag: 'joined' };
+    const p = await decrypt(data.key, data.ciphertext, data.iv);
+    if (!p) return generic;
+    if (data.type === 'reminder') return { title: p.title, body: p.body, tag: p.tag || 'reminder' };
+    if (p.type === 'reply') return { title: `${p.name || 'Tu pareja'} te respondió 💌`, body: p.text, tag: 'reply' };
+    if (p.type === 'moment') return { title: `${p.name || 'Tu pareja'} compartió cómo se siente`, body: MOMENTS[p.id] || '💞', tag: 'moment' };
+    return generic;
+  } catch {
+    return generic; // en iPhone SIEMPRE hay que mostrar algo, o iOS desactiva las notificaciones
+  }
+}
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = {}; }
+  event.waitUntil(buildNotification(data).then((n) => self.registration.showNotification(n.title, {
+    body: n.body, tag: n.tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', lang: 'es', data: { url: self.registration.scope },
+  })));
 });

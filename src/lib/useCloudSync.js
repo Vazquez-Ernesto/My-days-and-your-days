@@ -6,6 +6,7 @@ import { useStore } from '../state/store.jsx';
 import { api as defaultApi } from './api.js';
 import { encryptJSON, decryptJSON, fingerprint } from './crypto.js';
 import { buildSnapshot } from './partner.js';
+import { storeKeys, syncSchedule } from './push.js';
 import { SYNC_INTERVAL_MS } from './config.js';
 
 const GONE = ['PAIR_NOT_FOUND', 'NOT_A_MEMBER', 'NO_PAIR'];
@@ -40,6 +41,12 @@ export function useCloudSync(api = defaultApi) {
       if (hash !== c.lastUploadHash) {
         await api.putSnapshot(c.token, c.pairId, await encryptJSON(c.key, { ...content, updatedAt }));
         updateCloud({ lastUploadHash: hash });
+      }
+      // Momento nuevo → mensaje cifrado, así a él le llega una notificación al instante
+      const moment = state.sharing.shares.moments ? state.sharing.moments.at(-1) : null;
+      if (moment && moment.at > (c.lastMomentSentAt ?? '') && Date.now() - new Date(moment.at) < 6 * 3.6e6) {
+        await api.postMessage(c.token, c.pairId, await encryptJSON(c.key, { type: 'moment', id: moment.id, name: state.sharing.name }));
+        updateCloud({ lastMomentSentAt: moment.at });
       }
       const msgs = await api.getMessages(c.token, c.pairId, c.messagesSince);
       if (msgs.length) {
@@ -126,6 +133,24 @@ export function useCloudSync(api = defaultApi) {
   useEffect(() => {
     if (pendingReplies) syncNow();
   }, [pendingReplies, syncNow]);
+
+  // Notificaciones push: claves para el service worker + calendario de recordatorios cifrado
+  const { pushEnabled, key, selfKey } = cloud;
+  useEffect(() => {
+    if (pushEnabled) storeKeys({ pair: key, self: selfKey });
+  }, [pushEnabled, key, selfKey]);
+  const scheduleKey = pushEnabled
+    ? JSON.stringify([store.today, store.state.periodDays, store.state.settings.reminders, store.state.settings.cycleLength,
+      store.state.settings.periodLength, store.state.logs[store.today]?.pill, role, store.state.partner.snapshot?.syncedAt,
+      store.state.partner.prefs])
+    : null;
+  useEffect(() => {
+    if (!scheduleKey) return undefined;
+    const t = setTimeout(() => {
+      syncSchedule(ref.current, ref.current.today).catch((e) => setError(e));
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [scheduleKey]);
 
   return { syncNow, error };
 }
