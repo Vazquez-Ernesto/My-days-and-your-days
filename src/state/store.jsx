@@ -11,6 +11,7 @@ export const EMPTY_LOG = {
   flow: null, symptoms: [], mood: null, note: '',
   sex: null, // null | 'protected' | 'unprotected'
   orgasm: false, weight: null, temp: null, pill: false,
+  partnerNote: '', // nota PARA su pareja (la privada es `note`)
 };
 
 function isEmptyLog(log) {
@@ -32,7 +33,9 @@ const initialState = {
   // Conexión con el servidor (vacía = modo prueba, sin servidor)
   cloud: { deviceId: null, token: null, pairId: null, key: null, status: 'none', inviteCode: null, inviteExpiresAt: null,
     lastUploadHash: null, messagesSince: null, lastSyncAt: null,
-    pushEnabled: false, selfKey: null, scheduleHash: null, lastMomentSentAt: null },
+    pushEnabled: false, selfKey: null, scheduleHash: null, lastMomentSentAt: null, lastNoteSent: null },
+  // Cuestionario en pareja: { 'YYYY-MM-DD': { mine: [..5], sent, theirs: [..5], theirName } }
+  quiz: { days: {} },
 };
 
 function load() {
@@ -47,7 +50,8 @@ function load() {
     // Quienes ya usaban la app (v0.3 o anterior) llevan su propio ciclo
     const role = saved.role ?? (saved.onboarded ? 'self' : null);
     const cloud = { ...initialState.cloud, ...saved.cloud };
-    return { ...initialState, ...saved, role, settings, sharing, partner, cloud };
+    const quiz = { ...initialState.quiz, ...saved.quiz };
+    return { ...initialState, ...saved, role, settings, sharing, partner, cloud, quiz };
   } catch {
     return initialState;
   }
@@ -133,6 +137,19 @@ export function StoreProvider({ children }) {
       })),
       unlinkPartner: () => setState((s) => ({
         ...s, onboarded: false, role: null, partner: { ...initialState.partner, prefs: s.partner.prefs }, cloud: { ...initialState.cloud },
+        quiz: { days: {} },
+      })),
+      // --- cuestionario ---
+      answerQuiz: (date, answers) => setState((s) => ({
+        ...s, quiz: { days: { ...s.quiz.days, [date]: { ...s.quiz.days[date], mine: answers, sent: false } } },
+      })),
+      markQuizSent: (dates) => setState((s) => {
+        const days = { ...s.quiz.days };
+        for (const d of dates) days[d] = { ...days[d], sent: true };
+        return { ...s, quiz: { days } };
+      }),
+      receiveQuiz: (date, answers, name) => setState((s) => ({
+        ...s, quiz: { days: { ...s.quiz.days, [date]: { ...s.quiz.days[date], theirs: answers, theirName: name || '' } } },
       })),
       // --- conexión con el servidor ---
       updateCloud: (patch) => setState((s) => ({ ...s, cloud: { ...s.cloud, ...patch } })),
@@ -141,6 +158,7 @@ export function StoreProvider({ children }) {
         ...s, cloud: { ...initialState.cloud, deviceId: s.cloud.deviceId, token: s.cloud.token,
           pushEnabled: s.cloud.pushEnabled, selfKey: s.cloud.selfKey },
         sharing: { ...s.sharing, inbox: [], seenReplyAt: null, inviteCode: null },
+        quiz: { days: {} },
       })),
       setPartnerSnapshot: (snapshot) => setState((s) => ({ ...s, partner: { ...s.partner, snapshot } })),
       setPartnerUnlinked: () => setState((s) => ({ ...s, partner: { ...s.partner, unlinked: true } })),

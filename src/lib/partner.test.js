@@ -17,7 +17,7 @@ const baseState = (shares = DEFAULT_SHARES) => ({
 });
 
 describe('buildSnapshot: ella decide qué se comparte', () => {
-  it('por defecto comparte ciclo y momentos, pero no síntomas', () => {
+  it('por defecto comparte ciclo y momentos, pero no síntomas ni vida sexual', () => {
     const snap = buildSnapshot(baseState(), NOW);
     expect(snap.name).toBe('Ana');
     expect(snap.cycle).toMatchObject({ cycleLength: 28, periodLength: 5 });
@@ -26,17 +26,23 @@ describe('buildSnapshot: ella decide qué se comparte', () => {
     expect(snap.days).toBeUndefined();
   });
 
-  it('nunca incluye notas, relaciones ni peso', () => {
-    const snap = buildSnapshot(baseState({ cycle: true, moments: true, symptoms: true, fertile: true }), NOW);
-    const json = JSON.stringify(snap);
+  it('la nota privada y la píldora NUNCA se comparten, aunque active todo', () => {
+    const all = { cycle: true, moments: true, flow: true, notes: true, symptoms: true, sex: true, body: true, fertile: true };
+    const json = JSON.stringify(buildSnapshot(baseState(all), NOW));
     expect(json).not.toContain('privado');
-    expect(json).not.toContain('protected');
-    expect(json).not.toContain('weight');
+    expect(json).not.toContain('pill');
+    expect(json).toContain('protected'); // vida sexual: sí, porque la activó
   });
 
-  it('con síntomas activados comparte solo los últimos 30 días', () => {
-    const snap = buildSnapshot(baseState({ ...DEFAULT_SHARES, symptoms: true }), NOW);
-    expect(snap.days).toEqual({ '2026-11-19': { symptoms: ['Cólicos'], mood: 'sad' } });
+  it('cada categoría se comparte solo si está activada', () => {
+    const st = baseState(DEFAULT_SHARES);
+    st.logs['2026-11-19'] = { ...st.logs['2026-11-19'], flow: 'spotting', partnerNote: 'Te quiero 💞', orgasm: true, temp: 36.6 };
+    const def = buildSnapshot(st, NOW).days['2026-11-19'];
+    expect(def).toEqual({ flow: 'spotting', partnerNote: 'Te quiero 💞' }); // por defecto: flujo y nota para él
+    const off = buildSnapshot({ ...st, sharing: { ...st.sharing, shares: { ...DEFAULT_SHARES, flow: false, notes: false } } }, NOW);
+    expect(off.days).toBeUndefined();
+    const sex = buildSnapshot({ ...st, sharing: { ...st.sharing, shares: { ...DEFAULT_SHARES, sex: true, body: true } } }, NOW).days['2026-11-19'];
+    expect(sex).toMatchObject({ sex: 'protected', orgasm: true, weight: 60, temp: 36.6 });
   });
 
   it('sin permisos no comparte nada del ciclo ni momentos', () => {

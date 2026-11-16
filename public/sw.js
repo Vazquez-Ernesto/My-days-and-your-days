@@ -1,6 +1,6 @@
 // Service worker de My Days: hace que la app funcione sin internet.
 // Al cambiar algo importante, subí la versión para que se borre la caché vieja.
-const CACHE = 'mydays-v0.6.0';
+const CACHE = 'mydays-v0.7.0';
 // Rutas relativas a la ubicación del service worker (funciona también en una subcarpeta)
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon.svg'];
 
@@ -93,6 +93,9 @@ async function buildNotification(data) {
     if (data.type === 'reminder') return { title: p.title, body: p.body, tag: p.tag || 'reminder' };
     if (p.type === 'reply') return { title: `${p.name || 'Tu pareja'} te respondió 💌`, body: p.text, tag: 'reply' };
     if (p.type === 'moment') return { title: `${p.name || 'Tu pareja'} compartió cómo se siente`, body: MOMENTS[p.id] || '💞', tag: 'moment' };
+    if (p.type === 'note') return { title: `${p.name || 'Tu pareja'} te dejó una nota 💌`, body: p.text, tag: 'note' };
+    if (p.type === 'quiz' && p.complete) return { title: '¡Ya están los resultados! 💞', body: 'Veamos qué tan en sintonía están 🔥', tag: `quiz:${p.date}` };
+    if (p.type === 'quiz') return { title: `${p.name || 'Tu pareja'} ya respondió el cuestionario 👀`, body: 'Respondé vos para ver los resultados.', tag: `quiz:${p.date}` };
     return generic;
   } catch {
     return generic; // en iPhone SIEMPRE hay que mostrar algo, o iOS desactiva las notificaciones

@@ -16,12 +16,19 @@ export const MOMENTS = [
 
 export const REPLIES = ['Te llevo chocolate 🍫', '¿Necesitás algo? 💗', 'Te llamo en un rato 📞', 'Te amo ❤️', 'Paso a buscarte 🚗', 'Hoy cocino yo 🍝'];
 
-export const DEFAULT_SHARES = { cycle: true, moments: true, symptoms: false, fertile: false };
+export const DEFAULT_SHARES = {
+  cycle: true, moments: true, flow: true, notes: true, symptoms: false, sex: false, body: false, fertile: false,
+};
+export const SHARED_DAYS = 60;
 
 export const SHARE_LABELS = {
   cycle: { label: 'Fase y días hasta el período', help: 'Tu anillo del ciclo y el calendario de períodos' },
   moments: { label: 'Mi momento', help: 'Cómo te sentís y tu deseo, cuando vos lo compartas' },
-  symptoms: { label: 'Síntomas y ánimo', help: 'De los últimos 30 días, para que sepa cómo ayudarte' },
+  flow: { label: 'Flujo del período', help: 'Manchado, leve, medio o abundante' },
+  notes: { label: 'Notas para mi pareja 💌', help: 'Lo que escribas en “Nota para tu pareja”. Tus notas privadas nunca se comparten' },
+  symptoms: { label: 'Síntomas y ánimo', help: 'Para que sepa cómo ayudarte' },
+  sex: { label: 'Vida sexual', help: 'Los días con relaciones (con o sin protección, orgasmo)' },
+  body: { label: 'Peso y temperatura', help: 'Lo que registres en el día' },
   fertile: { label: 'Ventana fértil y ovulación', help: 'Si buscan (o evitan) un embarazo' },
 };
 
@@ -44,14 +51,22 @@ export function buildSnapshot(state, now = new Date()) {
     snap.moments = sharing.moments.slice(-10);
     snap.desire = sharing.desire;
   }
-  if (s.symptoms) {
-    const from = addDays(todayISO(now), -30);
-    snap.days = {};
-    for (const [date, log] of Object.entries(logs)) {
-      if (date < from || (!log.symptoms?.length && !log.mood)) continue;
-      snap.days[date] = { symptoms: log.symptoms ?? [], mood: log.mood ?? null };
-    }
+  // Registro diario: solo los campos que ella habilitó. La nota privada y la píldora NUNCA se comparten.
+  const from = addDays(todayISO(now), -SHARED_DAYS);
+  const days = {};
+  for (const [date, log] of Object.entries(logs)) {
+    if (date < from) continue;
+    const d = {};
+    if (s.symptoms && log.symptoms?.length) d.symptoms = log.symptoms;
+    if (s.symptoms && log.mood) d.mood = log.mood;
+    if (s.flow && log.flow) d.flow = log.flow;
+    if (s.sex && log.sex) { d.sex = log.sex; d.orgasm = Boolean(log.orgasm); }
+    if (s.body && log.weight) d.weight = log.weight;
+    if (s.body && log.temp) d.temp = log.temp;
+    if (s.notes && log.partnerNote?.trim()) d.partnerNote = log.partnerNote.trim();
+    if (Object.keys(d).length) days[date] = d;
   }
+  if (Object.keys(days).length) snap.days = days;
   return snap;
 }
 
