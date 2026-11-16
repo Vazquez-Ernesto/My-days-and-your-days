@@ -6,6 +6,8 @@ spring:
     url: jdbc:h2:mem:mydays;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
     username: sa
     password: ""
+    hikari:
+      maximum-pool-size: 5   # el plan gratis de Neon tiene pocas conexiones; 5 alcanza de sobra
   jpa:
     open-in-view: false
     hibernate:
@@ -31,8 +33,10 @@ app:
       http://localhost:5173,http://localhost:4173,https://vazquez-ernesto.github.io
 
 ---
-# Perfil "postgres": producción o pruebas con una base real.
-# Se activa con SPRING_PROFILES_ACTIVE=postgres y las variables DATABASE_URL, DATABASE_USER, DATABASE_PASSWORD.
+# Producción con Neon: alcanza con la variable DATABASE_URL tal como la da Neon (postgresql://...).
+# DatabaseUrlEnvironmentPostProcessor la convierte a JDBC. Usar la URL DIRECTA (sin -pooler): Flyway la necesita.
+#
+# Perfil "postgres" (CI): DATABASE_URL en formato jdbc: + DATABASE_USER / DATABASE_PASSWORD.
 spring:
   config:
     activate:

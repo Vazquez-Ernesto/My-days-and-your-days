@@ -75,7 +75,19 @@ Los errores vuelven como `{ "status": 410, "code": "INVITE_EXPIRED", "detail": "
 `NO_PAIR` · `PAIR_NOT_FOUND` · `NOT_A_MEMBER` · `OWNER_ONLY` · `NO_SNAPSHOT` · `PAIR_NOT_ACTIVE` ·
 `MESSAGE_TOO_LARGE` · `VALIDATION_ERROR` · `MALFORMED_JSON`
 
-## Producción
+## Producción (Neon)
 
-Perfil `postgres` con las variables `SPRING_PROFILES_ACTIVE=postgres`, `DATABASE_URL`,
-`DATABASE_USER`, `DATABASE_PASSWORD` y `PORT`.
+La base es **Neon Postgres** (proyecto `jolly-scene-86700703`, rama `production`, PostgreSQL 18).
+Alcanza con **una variable**: `DATABASE_URL`, tal cual la da Neon (`postgresql://usuario:clave@host/neondb?sslmode=require&channel_binding=require`).
+`DatabaseUrlEnvironmentPostProcessor` la convierte al formato JDBC.
+
+- Usá la URL **directa** (host sin `-pooler`): Flyway corre las migraciones al arrancar y no funcionan bien con PgBouncer.
+  El servidor ya tiene su propio pool (Hikari, máximo 5 conexiones).
+- Para correrlo en tu PC contra Neon (PowerShell), con la URL en `.env.local` (no se sube a git):
+  ```powershell
+  $env:DATABASE_URL = "postgresql://..."   # la URL directa de Neon
+  .\mvnw.cmd spring-boot:run
+  ```
+- Otras variables: `PORT` (la pone el hosting).
+
+El perfil `postgres` (usado en la CI) sigue aceptando `DATABASE_URL` en formato `jdbc:` con `DATABASE_USER` y `DATABASE_PASSWORD`.
