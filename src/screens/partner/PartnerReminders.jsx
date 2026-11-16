@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../../state/store.jsx';
 import Header from '../../components/Header.jsx';
 import Toggle from '../../components/Toggle.jsx';
+import PushCard from '../../components/PushCard.jsx';
 import { Stepper } from '../Onboarding.jsx';
 import { PERMISSION_TEXT } from '../Reminders.jsx';
 import { permission, requestPermission } from '../../lib/notifications.js';
@@ -20,6 +21,7 @@ export default function PartnerReminders({ onSettings }) {
   return (
     <section className="screen">
       <Header title="Avisos" onSettings={onSettings} />
+      <PushCard fallback={(
       <div className="card">
         <div className="rem-row__main">
           <div className="grow">
@@ -30,6 +32,7 @@ export default function PartnerReminders({ onSettings }) {
         </div>
         {prefs.enabled && <p className="muted small perm">{PERMISSION_TEXT[perm]}</p>}
       </div>
+      )} />
 
       <h2 className="section-title">Avisarme cuando…</h2>
       <div className="card card--list">

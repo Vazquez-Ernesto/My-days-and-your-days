@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import crypto from 'node:crypto';
 import { App, freezeDate, seed, mockNotifications, sentNotifications } from './helpers.js';
 
 test('muestra el aviso dentro de la app 2 días antes del período', async ({ page }) => {
@@ -34,16 +35,40 @@ test('no envía notificaciones si la usuaria no las activó', async ({ page }) =
   expect(await sentNotifications(page)).toEqual([]);
 });
 
-test('activar recordatorios desde Ajustes', async ({ page }) => {
+test('activar notificaciones push: suscribe el teléfono y programa los avisos CIFRADOS', async ({ page }) => {
+  // Suscripción simulada con claves P-256 válidas (el Chromium de los tests no llega a los servidores de push)
+  const ecdh = crypto.createECDH('prime256v1');
+  ecdh.generateKeys();
+  const fakeSub = {
+    endpoint: 'https://fcm.googleapis.com/fcm/send/e2e-test',
+    keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: crypto.randomBytes(16).toString('base64url') },
+  };
+  await page.addInitScript((sub) => {
+    PushManager.prototype.getSubscription = async () => null;
+    PushManager.prototype.subscribe = async () => ({ toJSON: () => sub, unsubscribe: async () => true });
+  }, fakeSub);
   await mockNotifications(page);
   await freezeDate(page);
-  await seed(page);
+  await seed(page, { settings: { reminders: { pill: { on: true, time: '21:00' } } } });
+
+  const sent = [];
+  page.on('request', (r) => r.url().includes('/api/push/') && sent.push({ url: r.url(), method: r.method(), body: r.postData() }));
+
   const app = new App(page);
   await app.goto();
   await app.openTab('Recordatorios');
-  await page.getByRole('switch', { name: 'Activar recordatorios' }).check();
-  await expect(page.getByText('Notificaciones permitidas en este dispositivo.')).toBeVisible();
-  expect((await app.savedState()).settings.reminders.enabled).toBe(true);
+  await page.getByRole('switch', { name: 'Activar notificaciones push' }).check();
+  await expect(page.getByText('Activadas ✓ Llegan aunque la app esté cerrada.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Enviar notificación de prueba' })).toBeVisible();
+
+  // Se registró la suscripción y se subió el calendario de avisos
+  await expect.poll(() => sent.some((r) => r.method === 'PUT' && r.url.endsWith('/api/push/schedule')), { timeout: 10_000 }).toBe(true);
+  expect(sent.find((r) => r.url.endsWith('/api/push/subscription')).body).toContain('e2e-test');
+  const schedule = JSON.parse(sent.find((r) => r.url.endsWith('/api/push/schedule')).body);
+  expect(schedule.items.length).toBeGreaterThanOrEqual(7); // al menos la píldora de cada día
+  const raw = JSON.stringify(schedule);
+  for (const secret of ['píldora', 'período', 'Tu período', 'pill']) expect(raw).not.toContain(secret);
+  expect((await app.savedState()).cloud).toMatchObject({ pushEnabled: true });
 });
 
 test('avisa si la usuaria bloqueó las notificaciones', async ({ page }) => {
@@ -53,8 +78,10 @@ test('avisa si la usuaria bloqueó las notificaciones', async ({ page }) => {
   const app = new App(page);
   await app.goto();
   await app.openTab('Recordatorios');
-  await page.getByRole('switch', { name: 'Activar recordatorios' }).check();
-  await expect(page.getByText(/Bloqueaste las notificaciones/)).toBeVisible();
+  // click() y no check(): el switch se enciende y vuelve a apagarse enseguida porque el permiso fue rechazado
+  await page.getByRole('switch', { name: 'Activar notificaciones push' }).click();
+  await expect(page.getByRole('alert')).toContainText('Las notificaciones están bloqueadas');
+  await expect(page.getByRole('switch', { name: 'Activar notificaciones push' })).not.toBeChecked();
 });
 
 test('no notifica antes de la hora configurada', async ({ page }) => {

@@ -18,6 +18,9 @@ export const ERROR_TEXT = {
   CANNOT_JOIN_OWN_INVITE: 'Esta es tu propia invitación: tiene que abrirla tu pareja en su teléfono.',
   ALREADY_PAIRED: 'Este teléfono ya está vinculado. Desvinculalo primero.',
   BAD_LINK: 'Ese link no es una invitación de My Days. Copialo completo e intentá de nuevo.',
+  PUSH_UNSUPPORTED: 'Este navegador no admite notificaciones push. En iPhone, instalá la app en el inicio (Compartir → Agregar a inicio) y abrila desde el ícono.',
+  PUSH_DENIED: 'Las notificaciones están bloqueadas. Activalas en Ajustes del iPhone → Notificaciones → My Days.',
+  NO_PUSH_SUBSCRIPTION: 'Las notificaciones no están activadas en este teléfono.',
 };
 export const errorText = (e) => ERROR_TEXT[e?.code] ?? e?.message ?? 'Algo salió mal. Intentá de nuevo.';
 
@@ -52,6 +55,11 @@ export function createApi(baseUrl = API_URL, fetchImpl = (...args) => fetch(...a
     putSnapshot: (token, pairId, payload) => request(`/api/pairs/${pairId}/snapshot`, { method: 'PUT', token, body: payload }),
     getSnapshot: (token, pairId) => request(`/api/pairs/${pairId}/snapshot`, { token }),
     postMessage: (token, pairId, payload) => request(`/api/pairs/${pairId}/messages`, { method: 'POST', token, body: payload }),
+    getPushKey: () => request('/api/push/public-key'),
+    putSubscription: (token, sub) => request('/api/push/subscription', { method: 'PUT', token, body: sub }),
+    deleteSubscription: (token) => request('/api/push/subscription', { method: 'DELETE', token }),
+    putSchedule: (token, items) => request('/api/push/schedule', { method: 'PUT', token, body: { items } }),
+    testPush: (token) => request('/api/push/test', { method: 'POST', token }),
     getMessages: (token, pairId, since) =>
       request(`/api/pairs/${pairId}/messages${since ? `?since=${encodeURIComponent(since)}` : ''}`, { token }),
   };

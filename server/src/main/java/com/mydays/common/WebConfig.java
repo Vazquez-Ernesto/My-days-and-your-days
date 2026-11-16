@@ -26,7 +26,7 @@ public class WebConfig implements WebMvcConfigurer {
     /** Todas las rutas /api/** piden token, salvo el registro de dispositivos. */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(auth).addPathPatterns("/api/**").excludePathPatterns("/api/devices");
+        registry.addInterceptor(auth).addPathPatterns("/api/**").excludePathPatterns("/api/devices", "/api/push/public-key");
     }
 
     @Override

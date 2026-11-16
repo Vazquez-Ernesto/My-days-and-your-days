@@ -4,6 +4,7 @@ import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { Stepper } from './Onboarding.jsx';
 import Toggle from '../components/Toggle.jsx';
+import PushCard from '../components/PushCard.jsx';
 import { permission, requestPermission } from '../lib/notifications.js';
 
 export const PERMISSION_TEXT = {
@@ -57,6 +58,7 @@ export default function Reminders({ onSettings }) {
     <section className="screen">
       <Header title="Recordatorios" onSettings={onSettings} />
 
+      <PushCard fallback={(
       <div className="card">
         <div className="rem-row__main">
           <div className="grow">
@@ -67,6 +69,7 @@ export default function Reminders({ onSettings }) {
         </div>
         {prefs.enabled && <p className="muted small perm">{PERMISSION_TEXT[perm]}</p>}
       </div>
+      )} />
 
       <h2 className="section-title">Período y fertilidad</h2>
       <div className="card card--list">
@@ -102,7 +105,9 @@ export default function Reminders({ onSettings }) {
       </div>
 
       <p className="muted small center">
-        En la versión web los avisos llegan cuando abrís la app (o si está abierta). Con la app de tiendas llegarán aunque esté cerrada.
+        {state.cloud.pushEnabled
+          ? 'Programamos tus avisos de los próximos 7 días. Abrí la app al menos una vez por semana para mantenerlos al día.'
+          : 'Sin notificaciones push, los avisos llegan solo cuando abrís la app.'}
       </p>
     </section>
   );

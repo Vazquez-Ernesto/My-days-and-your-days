@@ -29,7 +29,7 @@ function useReminderNotifications() {
     return () => clearInterval(id);
   }, []);
   useEffect(() => {
-    if (!enabled || permission() !== 'granted') return;
+    if (!enabled || permission() !== 'granted' || state.cloud.pushEnabled) return; // con push, avisa el servidor
     const now = new Date();
     const pending = reminders.filter((r) => !state.notified.includes(r.id) && isTimeReached(r.time, now));
     if (!pending.length) return;
