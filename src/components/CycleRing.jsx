@@ -1,7 +1,7 @@
 import { LUTEAL_PHASE } from '../lib/cycle.js';
 
 // Anillo SVG: cada segmento es un día del ciclo, coloreado según la fase.
-export default function CycleRing({ summary, children }) {
+export default function CycleRing({ summary, children, hideFertile = false }) {
   const size = 260;
   const r = 110;
   const c = size / 2;
@@ -13,8 +13,8 @@ export default function CycleRing({ summary, children }) {
     const day = i + 1;
     let cls = 'seg';
     if (day <= summary.periodLength) cls += ' seg--period';
-    else if (day === ovulation) cls += ' seg--ovulation';
-    else if (day >= ovulation - 5 && day <= ovulation + 1) cls += ' seg--fertile';
+    else if (!hideFertile && day === ovulation) cls += ' seg--ovulation';
+    else if (!hideFertile && day >= ovulation - 5 && day <= ovulation + 1) cls += ' seg--fertile';
     if (day > summary.cycleLength) cls += ' seg--late';
     const a0 = (i / total) * 2 * Math.PI - Math.PI / 2 + gap;
     const a1 = ((i + 1) / total) * 2 * Math.PI - Math.PI / 2 - gap;

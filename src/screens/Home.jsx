@@ -2,6 +2,7 @@ import { useStore } from '../state/store.jsx';
 import CycleRing from '../components/CycleRing.jsx';
 import CycleTimeline from '../components/CycleTimeline.jsx';
 import ReminderBanners from '../components/ReminderBanner.jsx';
+import MomentCard from '../components/MomentCard.jsx';
 import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { AdBanner } from '../components/Premium.jsx';
@@ -65,6 +66,8 @@ export default function Home({ onUpgrade, onSettings }) {
         <CycleTimeline summary={summary} start={periods[periods.length - 1].start} />
         <p className="muted small"><strong>{phase.label}.</strong> {phase.tip}</p>
       </div>
+
+      {state.sharing.shares.moments && <MomentCard />}
 
       {fertile && (
         <div className="card info-row">

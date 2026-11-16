@@ -9,14 +9,19 @@ import Settings from './screens/Settings.jsx';
 import Plans from './screens/Plans.jsx';
 import PinLock from './screens/PinLock.jsx';
 import DayLogSheet from './components/DayLogSheet.jsx';
+import InviteSheet from './components/InviteSheet.jsx';
+import PartnerHome from './screens/partner/PartnerHome.jsx';
+import PartnerCalendar from './screens/partner/PartnerCalendar.jsx';
+import PartnerReminders from './screens/partner/PartnerReminders.jsx';
+import PartnerSettings from './screens/partner/PartnerSettings.jsx';
+import { buildSnapshot } from './lib/partner.js';
 import Icon from './components/Icons.jsx';
 import { permission, showNotification } from './lib/notifications.js';
 import { isTimeReached } from './lib/reminders.js';
 
 // Envía como notificación del sistema los recordatorios de hoy cuya hora ya llegó.
 function useReminderNotifications() {
-  const { state, reminders, markNotified } = useStore();
-  const enabled = state.settings.reminders.enabled;
+  const { state, reminders, markNotified, notificationsEnabled: enabled } = useStore();
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000); // revisamos cada minuto
@@ -46,6 +51,12 @@ function useTheme(theme) {
   }, [theme]);
 }
 
+const PARTNER_TABS = [
+  { id: 'home', label: 'Hoy', icon: 'heart' },
+  { id: 'calendar', label: 'Calendario', icon: 'calendar' },
+  { id: 'reminders', label: 'Avisos', icon: 'bell' },
+];
+
 const TABS = [
   { id: 'home', label: 'Hoy', icon: 'heart' },
   { id: 'calendar', label: 'Calendario', icon: 'calendar' },
@@ -61,6 +72,8 @@ export default function App() {
   const [showPlans, setShowPlans] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   useTheme(state.settings.theme);
   useReminderNotifications();
 
@@ -69,26 +82,38 @@ export default function App() {
     return <div className="app"><PinLock pin={state.settings.pin} onUnlock={() => setUnlocked(true)} /></div>;
   }
 
-  const nav = { onLog: setLogDate, onUpgrade: () => setShowPlans(true), onSettings: () => setShowSettings(true) };
-  const screens = {
+  const isPartner = state.role === 'partner' && state.partner.snapshot;
+  const nav = {
+    onLog: setLogDate, onUpgrade: () => setShowPlans(true), onSettings: () => setShowSettings(true),
+    onInvite: () => setShowInvite(true), onPreview: () => setShowPreview(true),
+  };
+  const screens = isPartner ? {
+    home: <PartnerHome snapshot={state.partner.snapshot} {...nav} />,
+    calendar: <PartnerCalendar {...nav} />,
+    reminders: <PartnerReminders {...nav} />,
+  } : {
     home: <Home {...nav} />,
     calendar: <CalendarScreen {...nav} />,
     reminders: <Reminders {...nav} />,
     me: <Me {...nav} />,
   };
+  const tabs = isPartner ? PARTNER_TABS : TABS;
+  const SettingsScreen = isPartner ? PartnerSettings : Settings;
+  let content = screens[tab] ?? screens.home;
+  if (showSettings) content = <SettingsScreen {...nav} onBack={() => setShowSettings(false)} />;
+  if (showPreview) content = <PartnerHome snapshot={buildSnapshot(state)} preview onClose={() => setShowPreview(false)} />;
 
   return (
     <div className="app">
-      <main className="app__main">
-        {showSettings ? <Settings {...nav} onBack={() => setShowSettings(false)} /> : screens[tab]}
-      </main>
+      <main className="app__main">{content}</main>
       <nav className="tabbar" aria-label="Navegación principal">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button key={t.id} aria-label={t.label}
-            className={`tabbar__btn ${t.action ? 'tabbar__btn--action' : ''} ${tab === t.id && !showSettings ? 'is-on' : ''}`}
+            className={`tabbar__btn ${t.action ? 'tabbar__btn--action' : ''} ${tab === t.id && !showSettings && !showPreview ? 'is-on' : ''}`}
             onClick={() => {
               if (t.action) return setLogDate(today);
               setShowSettings(false);
+              setShowPreview(false);
               setTab(t.id);
             }}>
             <span className="tabbar__icon"><Icon name={t.icon} size={t.action ? 20 : 22} strokeWidth={t.action ? 3 : 2} /></span>
@@ -98,6 +123,7 @@ export default function App() {
       </nav>
       {logDate && <DayLogSheet key={logDate} date={logDate} onClose={() => setLogDate(null)} />}
       {showPlans && <Plans onClose={() => setShowPlans(false)} />}
+      {showInvite && <InviteSheet onClose={() => setShowInvite(false)} />}
     </div>
   );
 }

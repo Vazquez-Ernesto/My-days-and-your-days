@@ -3,6 +3,7 @@ import { groupPeriods, predictCycles, cycleSummary, averages } from '../lib/cycl
 import { todayISO } from '../lib/dates.js';
 import { hasFeature, PREDICTION_MONTHS } from './plans.js';
 import { dueReminders, normalizeReminders, DEFAULT_REMINDERS } from '../lib/reminders.js';
+import { DEFAULT_SHARES, DEFAULT_PARTNER_PREFS, partnerReminders, makeInviteCode } from '../lib/partner.js';
 
 const STORAGE_KEY = 'mydays:v1';
 
@@ -18,11 +19,16 @@ function isEmptyLog(log) {
 
 const initialState = {
   onboarded: false,
+  role: null, // 'self' (lleva su ciclo) | 'partner' (la pareja que acompaña)
   periodDays: [], // ['2026-11-01', ...]
   logs: {}, // { '2026-11-01': { ...EMPTY_LOG } }
   settings: { cycleLength: 28, periodLength: 5, theme: 'system', pin: null, reminders: DEFAULT_REMINDERS },
   plan: 'free', // 'free' | 'premium'  (en producción esto lo valida el servidor)
   notified: [], // ids de recordatorios ya enviados como notificación
+  // Lo que ELLA comparte con su pareja
+  sharing: { name: '', shares: DEFAULT_SHARES, moments: [], desire: null, inviteCode: null },
+  // Lo que ÉL recibe (en la etapa A, datos de ejemplo; en la B, desde el servidor)
+  partner: { snapshot: null, prefs: DEFAULT_PARTNER_PREFS, seenMomentAt: null, replies: [] },
 };
 
 function load() {
@@ -32,7 +38,11 @@ function load() {
     const saved = JSON.parse(raw);
     const settings = { ...initialState.settings, ...saved.settings };
     settings.reminders = normalizeReminders(saved.settings?.reminders);
-    return { ...initialState, ...saved, settings };
+    const sharing = { ...initialState.sharing, ...saved.sharing, shares: { ...DEFAULT_SHARES, ...saved.sharing?.shares } };
+    const partner = { ...initialState.partner, ...saved.partner, prefs: { ...DEFAULT_PARTNER_PREFS, ...saved.partner?.prefs } };
+    // Quienes ya usaban la app (v0.3 o anterior) llevan su propio ciclo
+    const role = saved.role ?? (saved.onboarded ? 'self' : null);
+    return { ...initialState, ...saved, role, settings, sharing, partner };
   } catch {
     return initialState;
   }
@@ -64,7 +74,10 @@ export function StoreProvider({ children }) {
       averages: avg,
       predictions: predictCycles(periods, state.settings, today, count),
       summary,
-      reminders: dueReminders(summary, state.settings.reminders, today, { pillTaken: Boolean(state.logs[today]?.pill) }),
+      reminders: state.role === 'partner'
+        ? partnerReminders(state.partner.snapshot, state.partner.prefs, today, state.partner.seenMomentAt)
+        : dueReminders(summary, state.settings.reminders, today, { pillTaken: Boolean(state.logs[today]?.pill) }),
+      notificationsEnabled: state.role === 'partner' ? state.partner.prefs.enabled : state.settings.reminders.enabled,
       can: (feature) => hasFeature(state.plan, feature),
     };
   }, [state]);
@@ -93,6 +106,24 @@ export function StoreProvider({ children }) {
         const r = s.settings.reminders;
         return { ...s, settings: { ...s.settings, reminders: { ...r, [key]: { ...r[key], ...patch } } } };
       }),
+      // --- modo pareja: lado de ella ---
+      updateSharing: (patch) => setState((s) => ({ ...s, sharing: { ...s.sharing, ...patch } })),
+      setShare: (key, on) => setState((s) => ({ ...s, sharing: { ...s.sharing, shares: { ...s.sharing.shares, [key]: on } } })),
+      shareMoment: (id) => setState((s) => ({
+        ...s, sharing: { ...s.sharing, moments: [...s.sharing.moments, { id, at: new Date().toISOString() }].slice(-30) },
+      })),
+      setDesire: (level) => setState((s) => ({ ...s, sharing: { ...s.sharing, desire: { level, at: new Date().toISOString() } } })),
+      ensureInviteCode: () => setState((s) => (s.sharing.inviteCode ? s : { ...s, sharing: { ...s.sharing, inviteCode: makeInviteCode() } })),
+      // --- modo pareja: lado de él ---
+      linkPartner: (snapshot) => setState((s) => ({
+        ...s, onboarded: true, role: 'partner', partner: { ...s.partner, snapshot, linkedAt: new Date().toISOString(), seenMomentAt: null, replies: [] },
+      })),
+      unlinkPartner: () => setState((s) => ({ ...s, onboarded: false, role: null, partner: { ...initialState.partner } })),
+      updatePartnerPrefs: (patch) => setState((s) => ({ ...s, partner: { ...s.partner, prefs: { ...s.partner.prefs, ...patch } } })),
+      markMomentSeen: (at) => setState((s) => ({ ...s, partner: { ...s.partner, seenMomentAt: at } })),
+      sendReply: (text) => setState((s) => ({
+        ...s, partner: { ...s.partner, replies: [...s.partner.replies, { text, at: new Date().toISOString() }].slice(-20) },
+      })),
       markNotified: (ids) => setState((s) => ({ ...s, notified: [...s.notified, ...ids].slice(-50) })),
       reset: () => setState({ ...initialState }),
     };

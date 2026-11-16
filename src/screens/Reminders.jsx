@@ -3,9 +3,10 @@ import { useStore } from '../state/store.jsx';
 import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { Stepper } from './Onboarding.jsx';
+import Toggle from '../components/Toggle.jsx';
 import { permission, requestPermission } from '../lib/notifications.js';
 
-const PERMISSION_TEXT = {
+export const PERMISSION_TEXT = {
   granted: 'Notificaciones permitidas en este dispositivo.',
   denied: 'Bloqueaste las notificaciones. Activalas desde los ajustes del navegador o del teléfono.',
   default: 'Te vamos a pedir permiso para notificarte.',
@@ -19,15 +20,6 @@ const ITEMS = [
   { key: 'fertile', label: 'Se aproxima el período fértil' },
   { key: 'logPeriod', label: 'Registrar período', help: 'Si tu período se atrasa' },
 ];
-
-function Toggle({ id, checked, onChange, label }) {
-  return (
-    <label className="toggle" htmlFor={id}>
-      <input id={id} type="checkbox" role="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} aria-label={label} />
-      <span className="toggle__track" />
-    </label>
-  );
-}
 
 function Row({ id, label, help, item, onChange, children }) {
   return (
