@@ -11,6 +11,7 @@ import { partnerReminders } from './partner.js';
 import { addDays } from './dates.js';
 
 export const SCHEDULE_DAYS = 7;
+export const QUIZ_TIME = '19:00';
 
 export function pushSupported() {
   return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -111,6 +112,19 @@ export function buildSchedule(state, now = new Date(), today) {
       for (const r of dueReminders(summary, state.settings.reminders, day, { pillTaken })) {
         items.push({ sendAt: localInstant(day, r.time), payload: { title: r.title, body: r.body, tag: r.id } });
       }
+    }
+  }
+  // Cuestionario del día (solo con la pareja vinculada de verdad)
+  const linked = state.role === 'partner'
+    ? Boolean(state.cloud?.pairId && state.partner?.snapshot && !state.partner.snapshot.demo)
+    : state.cloud?.status === 'active';
+  if (linked) {
+    for (const day of days) {
+      if (state.quiz?.days?.[day]?.mine) continue; // ya lo respondió
+      items.push({
+        sendAt: localInstant(day, QUIZ_TIME),
+        payload: { title: 'Ya está el cuestionario del día 💬', body: '5 preguntas para conocerse más. Respondé y mirá en qué coinciden.', tag: `quiz:${day}` },
+      });
     }
   }
   return items.filter((i) => i.sendAt > now).sort((a, b) => a.sendAt - b.sendAt).slice(0, 100);

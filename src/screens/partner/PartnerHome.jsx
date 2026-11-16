@@ -8,6 +8,8 @@ import { SYMPTOM_EMOJI } from '../../components/DayLogSheet.jsx';
 import { PHASES, pregnancyChance } from '../../lib/cycle.js';
 import { snapshotView, latestMoment, partnerTips, timeAgo, REPLIES } from '../../lib/partner.js';
 import { CHANCE_TEXT } from '../Home.jsx';
+import QuizCard from '../../components/QuizCard.jsx';
+import SharedDay from '../../components/SharedDay.jsx';
 
 const PARTNER_PHASE = {
   menstrual: 'Está con su período', follicular: 'Fase folicular', fertile: 'Fase fértil',
@@ -17,7 +19,7 @@ const PARTNER_PHASE = {
 /**
  * Lo que ve ÉL. `preview` = ella mirando cómo la ve su pareja (sin avisos ni respuestas).
  */
-export default function PartnerHome({ snapshot, preview = false, onSettings, onClose, onSync, syncError }) {
+export default function PartnerHome({ snapshot, preview = false, onSettings, onClose, onSync, syncError, onQuiz }) {
   const { today, reminders, markMomentSeen, sendReply, state, unlinkPartner } = useStore();
   const online = !snapshot.demo && Boolean(state.cloud.pairId);
   const [sent, setSent] = useState(null);
@@ -91,6 +93,15 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
         </div>
       ))}
 
+      {!preview && <QuizCard onOpen={onQuiz} />}
+
+      {snapshot.days?.[today] && (
+        <div className="card stack">
+          <h2 className="card__title">Su día hoy</h2>
+          <SharedDay day={snapshot.days[today]} name={name} />
+        </div>
+      )}
+
       {moment && (
         <div className="card stack partner-moment" role={!preview && reminders.some((r) => r.type === 'moment') ? 'status' : undefined}>
           <div className="row">
@@ -153,12 +164,6 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
         </div>
       )}
 
-      {symptomsToday.length > 0 && (
-        <div className="card stack">
-          <h2 className="card__title">Cómo se siente hoy</h2>
-          <div className="chips">{symptomsToday.map((x) => <span key={x} className="chip">{SYMPTOM_EMOJI[x]} {x}</span>)}</div>
-        </div>
-      )}
 
       {!preview && state.partner.replies.length > 0 && (
         <p className="muted small center">Le enviaste {state.partner.replies.length} mensaje{state.partner.replies.length === 1 ? '' : 's'}.</p>

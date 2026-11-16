@@ -57,3 +57,21 @@ describe('calendario de recordatorios push (próximos 7 días)', () => {
     expect(buildSchedule({ role: 'partner', partner: { snapshot: demoSnapshot(), prefs: DEFAULT_PARTNER_PREFS } }, NOW, '2026-11-20')).toEqual([]);
   });
 });
+
+describe('recordatorio diario del cuestionario', () => {
+  const linked = (quizDays = {}) => ({ ...self({}), cloud: { status: 'active' }, quiz: { days: quizDays } });
+  const quizItems = (st) => buildSchedule(st, localInstant('2026-11-20', '10:00'), '2026-11-20').filter((i) => i.payload.tag.startsWith('quiz:'));
+
+  it('con pareja vinculada: todos los días a las 19:00', () => {
+    const items = quizItems(linked());
+    expect(items).toHaveLength(7);
+    expect(items[0].sendAt).toEqual(localInstant('2026-11-20', '19:00'));
+    expect(items[0].payload.title).toBe('Ya está el cuestionario del día 💬');
+  });
+  it('si ya respondió hoy, no le recuerda hoy', () => {
+    expect(quizItems(linked({ '2026-11-20': { mine: [0, 0, 0, 0, 0] } }))).toHaveLength(6);
+  });
+  it('sin pareja vinculada, no hay cuestionario', () => {
+    expect(quizItems(self({}))).toHaveLength(0);
+  });
+});

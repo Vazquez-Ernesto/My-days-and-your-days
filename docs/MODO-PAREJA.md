@@ -82,6 +82,17 @@ Avance:
 - Unitarios con JUnit 5 + Mockito; integración con MockMvc (H2) y en CI contra PostgreSQL 16 real.
 - Contrato de la API con los tests E2E de Playwright existentes.
 
+## v0.7 — Su día compartido y cuestionario en pareja
+- **Registro compartido con permisos por categoría** (ella decide): flujo ✅, notas para su pareja ✅, síntomas y ánimo,
+  vida sexual, peso y temperatura. La nota privada y la píldora **nunca** se comparten. Él lo ve en "Su día hoy" y en el
+  calendario. Una nota nueva le llega como notificación ("Ana te dejó una nota 💌").
+- **Cuestionario en pareja**: 5 preguntas por día en castellano rioplatense (banco de 64 en `src/lib/quiz.js`).
+  Las preguntas se eligen de forma determinística (vínculo + fecha): las mismas para los dos, sin repetir por 12 días.
+  La app no muestra las respuestas del otro hasta que respondés. Notificaciones: recordatorio diario (19:00),
+  "Ana ya respondió 👀" y "¡Ya están los resultados!". Todo viaja cifrado.
+  - Límite conocido: la regla "no ver antes de responder" la aplica la app. Si en el futuro hiciera falta garantizarlo
+    criptográficamente, se puede usar *commit-reveal* (primero se envía un hash de las respuestas y después las respuestas).
+
 ## Etapa C — Antes de vender
 - Recuperar el vínculo al cambiar de teléfono (código de respaldo).
 - Límite de intentos para códigos de invitación y vencimiento.

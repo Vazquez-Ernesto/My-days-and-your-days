@@ -3,10 +3,10 @@ import { useStore } from '../../state/store.jsx';
 import { MonthGrid, Legend } from '../../components/Calendar.jsx';
 import Header from '../../components/Header.jsx';
 import Icon from '../../components/Icons.jsx';
-import { SYMPTOM_EMOJI } from '../../components/DayLogSheet.jsx';
 import { MONTHS, fromISO, formatLong } from '../../lib/dates.js';
 import { dayStatus, cycleDayOf } from '../../lib/cycle.js';
 import { snapshotView } from '../../lib/partner.js';
+import SharedDay from '../../components/SharedDay.jsx';
 
 const STATUS_TEXT = { period: 'Tuvo su período', predicted: 'Período previsto', fertile: 'Ventana fértil', ovulation: 'Ovulación prevista' };
 
@@ -27,7 +27,7 @@ export default function PartnerCalendar({ onSettings }) {
       </section>
     );
   }
-  const data = { ...view, logs: {} };
+  const data = { ...view, logs: Object.fromEntries(Object.entries(snap.days ?? {}).map(([d, v]) => [d, { ...v, note: v.partnerNote }])) };
   const move = (delta) => setYm(({ y, m }) => {
     const nm = m + delta;
     return { y: y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 };
@@ -35,7 +35,6 @@ export default function PartnerCalendar({ onSettings }) {
   let status = dayStatus(selected, view);
   if (hideFertile && (status === 'fertile' || status === 'ovulation')) status = null;
   const cycleDay = cycleDayOf(selected, view.periods, view.predictions);
-  const symptoms = snap.days?.[selected]?.symptoms ?? [];
 
   return (
     <section className="screen">
@@ -55,7 +54,7 @@ export default function PartnerCalendar({ onSettings }) {
           {cycleDay && <span className="muted small">Día del ciclo: {cycleDay}</span>}
         </div>
         <p className="muted">{STATUS_TEXT[status] ?? 'Sin eventos'}</p>
-        {symptoms.length > 0 && <div className="chips">{symptoms.map((x) => <span key={x} className="chip">{SYMPTOM_EMOJI[x]} {x}</span>)}</div>}
+        <SharedDay day={snap.days?.[selected]} name={snap.name} />
       </div>
     </section>
   );

@@ -125,8 +125,20 @@ export default function DayLogSheet({ date, onClose }) {
           <NumberField id="log-temp" label="Temperatura" unit="°C" step="0.01" min="34" max="42" value={log.temp} onChange={(v) => set({ temp: v })} />
         </section>
 
+        {state.role === 'self' && (
+          <section>
+            <h3>Nota para tu pareja 💌</h3>
+            <textarea id="log-partner-note" rows="2" value={log.partnerNote ?? ''} maxLength={500}
+              placeholder="Algo que quieras que sepa hoy…" aria-label="Nota para tu pareja"
+              onChange={(e) => set({ partnerNote: e.target.value })} />
+            <p className="muted small">
+              {state.sharing.shares.notes ? 'La ve tu pareja (y le llega una notificación).' : 'Tenés desactivado compartir notas en Ajustes → Modo pareja.'}
+            </p>
+          </section>
+        )}
+
         <section>
-          <h3>Notas</h3>
+          <h3>Notas privadas 🔒</h3>
           <textarea id="log-note" rows="3" value={log.note} placeholder="¿Algo más que quieras recordar?"
             onChange={(e) => set({ note: e.target.value })} />
         </section>

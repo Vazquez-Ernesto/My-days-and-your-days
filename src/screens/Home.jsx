@@ -3,6 +3,7 @@ import CycleRing from '../components/CycleRing.jsx';
 import CycleTimeline from '../components/CycleTimeline.jsx';
 import ReminderBanners from '../components/ReminderBanner.jsx';
 import MomentCard from '../components/MomentCard.jsx';
+import QuizCard from '../components/QuizCard.jsx';
 import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { AdBanner } from '../components/Premium.jsx';
@@ -15,7 +16,7 @@ export const CHANCE_TEXT = {
   alta: 'Alta posibilidad de quedar embarazada',
 };
 
-export default function Home({ onUpgrade, onSettings }) {
+export default function Home({ onUpgrade, onSettings, onQuiz }) {
   const { state, summary, predictions, periods, today, averages, setPeriodDays } = useStore();
 
   const periodStarted = () => setPeriodDays(startPeriod(state.periodDays, today, averages.periodLength));
@@ -66,6 +67,8 @@ export default function Home({ onUpgrade, onSettings }) {
         <CycleTimeline summary={summary} start={periods[periods.length - 1].start} />
         <p className="muted small"><strong>{phase.label}.</strong> {phase.tip}</p>
       </div>
+
+      <QuizCard onOpen={onQuiz} />
 
       {state.sharing.shares.moments && <MomentCard />}
 

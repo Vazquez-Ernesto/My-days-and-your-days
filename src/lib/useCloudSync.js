@@ -11,6 +11,33 @@ import { SYNC_INTERVAL_MS } from './config.js';
 
 const GONE = ['PAIR_NOT_FOUND', 'NOT_A_MEMBER', 'NO_PAIR'];
 
+/** Envía las respuestas del cuestionario que todavía no se mandaron (las dos personas). */
+async function sendQuizAnswers(api, { state, markQuizSent }, myName) {
+  const c = state.cloud;
+  const pending = Object.entries(state.quiz.days).filter(([, d]) => d.mine && !d.sent);
+  for (const [date, d] of pending) {
+    await api.postMessage(c.token, c.pairId, await encryptJSON(c.key, {
+      type: 'quiz', date, answers: d.mine, name: myName, complete: Boolean(d.theirs),
+    }));
+  }
+  if (pending.length) markQuizSent(pending.map(([date]) => date));
+}
+
+/** Procesa mensajes del otro: respuestas de él (para ella) y cuestionarios (para los dos). */
+async function readMessages(api, { state, receiveQuiz }, since) {
+  const c = state.cloud;
+  const msgs = await api.getMessages(c.token, c.pairId, since);
+  const replies = [];
+  for (const m of msgs.filter((x) => !x.fromMe)) {
+    try {
+      const p = await decryptJSON(c.key, m);
+      if (p.type === 'reply') replies.push({ text: p.text, name: p.name || '', at: m.createdAt });
+      if (p.type === 'quiz' && Array.isArray(p.answers)) receiveQuiz(p.date, p.answers, p.name);
+    } catch { /* mensaje ilegible: lo ignoramos */ }
+  }
+  return { replies, last: msgs.at(-1)?.createdAt ?? null };
+}
+
 export function useCloudSync(api = defaultApi) {
   const store = useStore();
   const ref = useRef(store);
@@ -48,17 +75,16 @@ export function useCloudSync(api = defaultApi) {
         await api.postMessage(c.token, c.pairId, await encryptJSON(c.key, { type: 'moment', id: moment.id, name: state.sharing.name }));
         updateCloud({ lastMomentSentAt: moment.at });
       }
-      const msgs = await api.getMessages(c.token, c.pairId, c.messagesSince);
-      if (msgs.length) {
-        const items = [];
-        for (const m of msgs.filter((x) => !x.fromMe)) {
-          try {
-            const p = await decryptJSON(c.key, m);
-            if (p.type === 'reply') items.push({ text: p.text, name: p.name || '', at: m.createdAt });
-          } catch { /* mensaje ilegible: lo ignoramos */ }
-        }
-        receiveReplies(items, msgs.at(-1).createdAt);
+      // Nota nueva para él → mensaje cifrado (notificación al instante; el contenido igual viaja en el snapshot)
+      const today = ref.current.today;
+      const note = state.sharing.shares.notes ? state.logs[today]?.partnerNote?.trim() : '';
+      if (note && `${today}|${note}` !== c.lastNoteSent) {
+        await api.postMessage(c.token, c.pairId, await encryptJSON(c.key, { type: 'note', text: note, name: state.sharing.name, date: today }));
+        updateCloud({ lastNoteSent: `${today}|${note}` });
       }
+      await sendQuizAnswers(api, ref.current, state.sharing.name);
+      const { replies, last } = await readMessages(api, ref.current, c.messagesSince);
+      if (last) receiveReplies(replies, last);
     } catch (e) {
       if (GONE.includes(e.code)) return resetPairing(); // él la desvinculó
       throw e;
@@ -66,9 +92,12 @@ export function useCloudSync(api = defaultApi) {
   }, [api]);
 
   const syncPartner = useCallback(async () => {
-    const { state, setPartnerSnapshot, setPartnerUnlinked, markRepliesSent } = ref.current;
+    const { state, setPartnerSnapshot, setPartnerUnlinked, markRepliesSent, updatePartner } = ref.current;
     const c = state.cloud;
     try {
+      await sendQuizAnswers(api, ref.current, state.partner.myName);
+      const { last } = await readMessages(api, ref.current, state.partner.messagesSince);
+      if (last) updatePartner({ messagesSince: last });
       const pending = state.partner.replies.filter((r) => !r.sent);
       for (const r of pending) {
         await api.postMessage(c.token, c.pairId, await encryptJSON(c.key, { type: 'reply', text: r.text, name: state.partner.myName }));
@@ -128,6 +157,15 @@ export function useCloudSync(api = defaultApi) {
     return () => clearTimeout(t);
   }, [shareKey, syncNow]);
 
+  // Cuestionario respondido o nota nueva → enviar enseguida
+  const quizPending = Object.values(store.state.quiz.days).filter((d) => d.mine && !d.sent).length;
+  const noteToday = role === 'self' ? store.state.logs[store.today]?.partnerNote ?? '' : '';
+  useEffect(() => {
+    if (!linked) return undefined;
+    const t = setTimeout(syncNow, 800);
+    return () => clearTimeout(t);
+  }, [quizPending, noteToday, linked, syncNow]);
+
   // Él: mandar una respuesta enseguida
   const pendingReplies = role === 'partner' ? store.state.partner.replies.filter((r) => !r.sent).length : 0;
   useEffect(() => {
@@ -142,7 +180,8 @@ export function useCloudSync(api = defaultApi) {
   const scheduleKey = pushEnabled
     ? JSON.stringify([store.today, store.state.periodDays, store.state.settings.reminders, store.state.settings.cycleLength,
       store.state.settings.periodLength, store.state.logs[store.today]?.pill, role, store.state.partner.snapshot?.syncedAt,
-      store.state.partner.prefs])
+      store.state.partner.prefs, Object.keys(store.state.quiz.days).filter((d) => store.state.quiz.days[d].mine).join(','),
+      cloud.status, cloud.pairId])
     : null;
   useEffect(() => {
     if (!scheduleKey) return undefined;

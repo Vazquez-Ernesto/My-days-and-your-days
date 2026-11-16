@@ -67,6 +67,17 @@ describe('service worker: notificaciones push', () => {
     });
   });
 
+  it('nota para la pareja y cuestionario', async () => {
+    const note = await encryptJSON(pairKey, { type: 'note', text: 'Traé helado 🍦', name: 'Ana' });
+    expect(await sw.push({ type: 'message', key: 'pair', ...note })).toMatchObject({ title: 'Ana te dejó una nota 💌', body: 'Traé helado 🍦' });
+    const first = await encryptJSON(pairKey, { type: 'quiz', date: '2026-11-20', answers: [0, 1, 2, 3, 0], name: 'Ana', complete: false });
+    expect(await sw.push({ type: 'message', key: 'pair', ...first })).toMatchObject({ title: 'Ana ya respondió el cuestionario 👀' });
+    const both = await encryptJSON(pairKey, { type: 'quiz', date: '2026-11-20', answers: [0, 1, 2, 3, 0], name: 'Ernesto', complete: true });
+    const n = await sw.push({ type: 'message', key: 'pair', ...both });
+    expect(n).toMatchObject({ title: '¡Ya están los resultados! 💞' });
+    expect(JSON.stringify(n)).not.toContain('answers'); // la notificación nunca muestra respuestas
+  });
+
   it('avisos sin contenido privado: prueba y vinculación', async () => {
     expect((await sw.push({ type: 'test' })).title).toBe('¡Las notificaciones funcionan! 🎉');
     expect((await sw.push({ type: 'joined' })).title).toBe('Tu pareja aceptó la invitación 💞');

@@ -16,6 +16,7 @@ import PartnerReminders from './screens/partner/PartnerReminders.jsx';
 import PartnerSettings from './screens/partner/PartnerSettings.jsx';
 import { buildSnapshot } from './lib/partner.js';
 import { useCloudSync } from './lib/useCloudSync.js';
+import Quiz from './screens/Quiz.jsx';
 import Icon from './components/Icons.jsx';
 import { permission, showNotification } from './lib/notifications.js';
 import { isTimeReached } from './lib/reminders.js';
@@ -75,6 +76,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   useTheme(state.settings.theme);
   useReminderNotifications();
   const { syncNow, error: syncError } = useCloudSync();
@@ -88,6 +90,7 @@ export default function App() {
   const nav = {
     onLog: setLogDate, onUpgrade: () => setShowPlans(true), onSettings: () => setShowSettings(true),
     onInvite: () => setShowInvite(true), onPreview: () => setShowPreview(true), onSync: syncNow, syncError,
+    onQuiz: () => setShowQuiz(true),
   };
   const screens = isPartner ? {
     home: <PartnerHome snapshot={state.partner.snapshot} {...nav} />,
@@ -104,6 +107,7 @@ export default function App() {
   let content = screens[tab] ?? screens.home;
   if (showSettings) content = <SettingsScreen {...nav} onBack={() => setShowSettings(false)} />;
   if (showPreview) content = <PartnerHome snapshot={buildSnapshot(state)} preview onClose={() => setShowPreview(false)} />;
+  if (showQuiz) content = <Quiz onBack={() => setShowQuiz(false)} />;
 
   return (
     <div className="app">
@@ -111,11 +115,12 @@ export default function App() {
       <nav className="tabbar" aria-label="Navegación principal">
         {tabs.map((t) => (
           <button key={t.id} aria-label={t.label}
-            className={`tabbar__btn ${t.action ? 'tabbar__btn--action' : ''} ${tab === t.id && !showSettings && !showPreview ? 'is-on' : ''}`}
+            className={`tabbar__btn ${t.action ? 'tabbar__btn--action' : ''} ${tab === t.id && !showSettings && !showPreview && !showQuiz ? 'is-on' : ''}`}
             onClick={() => {
               if (t.action) return setLogDate(today);
               setShowSettings(false);
               setShowPreview(false);
+              setShowQuiz(false);
               setTab(t.id);
             }}>
             <span className="tabbar__icon"><Icon name={t.icon} size={t.action ? 20 : 22} strokeWidth={t.action ? 3 : 2} /></span>
