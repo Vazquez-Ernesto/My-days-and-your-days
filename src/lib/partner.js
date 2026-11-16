@@ -159,15 +159,17 @@ export function makeInviteCode(random = Math.random) {
   return Array.from({ length: 8 }, () => chars[Math.floor(random() * chars.length)]).join('').replace(/^(.{4})/, '$1-');
 }
 
-export function inviteLink(code, base = window.location.href) {
+/** Link de invitación: el código va al servidor; la clave de cifrado queda solo en el link (después del #). */
+export function inviteLink(code, key, base = window.location.href) {
   const url = new URL(base);
-  url.hash = `invitacion-${code}`;
+  url.hash = `invitacion-${code}.${key}`;
   return url.toString();
 }
 
-export function inviteCodeFromHash(hash) {
-  const m = /^#invitacion-([A-Z0-9]{4}-[A-Z0-9]{4})$/.exec(hash ?? '');
-  return m ? m[1] : null;
+/** Lee una invitación desde un link completo, un hash o el texto pegado. null si no es válida. */
+export function parseInvite(text) {
+  const m = /invitacion-([A-Za-z0-9]{4}-[A-Za-z0-9]{4})\.([A-Za-z0-9_-]{43})/.exec(text ?? '');
+  return m ? { code: m[1].toUpperCase(), key: m[2] } : null;
 }
 
 /** Datos de ejemplo para probar el rol pareja sin servidor. */

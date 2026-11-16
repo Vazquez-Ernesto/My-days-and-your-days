@@ -26,9 +26,12 @@ const initialState = {
   plan: 'free', // 'free' | 'premium'  (en producción esto lo valida el servidor)
   notified: [], // ids de recordatorios ya enviados como notificación
   // Lo que ELLA comparte con su pareja
-  sharing: { name: '', shares: DEFAULT_SHARES, moments: [], desire: null, inviteCode: null },
+  sharing: { name: '', shares: DEFAULT_SHARES, moments: [], desire: null, inviteCode: null, inbox: [], seenReplyAt: null },
   // Lo que ÉL recibe (en la etapa A, datos de ejemplo; en la B, desde el servidor)
-  partner: { snapshot: null, prefs: DEFAULT_PARTNER_PREFS, seenMomentAt: null, replies: [] },
+  partner: { snapshot: null, prefs: DEFAULT_PARTNER_PREFS, seenMomentAt: null, replies: [], myName: '', unlinked: false },
+  // Conexión con el servidor (vacía = modo prueba, sin servidor)
+  cloud: { deviceId: null, token: null, pairId: null, key: null, status: 'none', inviteCode: null, inviteExpiresAt: null,
+    lastUploadHash: null, messagesSince: null, lastSyncAt: null },
 };
 
 function load() {
@@ -42,10 +45,18 @@ function load() {
     const partner = { ...initialState.partner, ...saved.partner, prefs: { ...DEFAULT_PARTNER_PREFS, ...saved.partner?.prefs } };
     // Quienes ya usaban la app (v0.3 o anterior) llevan su propio ciclo
     const role = saved.role ?? (saved.onboarded ? 'self' : null);
-    return { ...initialState, ...saved, role, settings, sharing, partner };
+    const cloud = { ...initialState.cloud, ...saved.cloud };
+    return { ...initialState, ...saved, role, settings, sharing, partner, cloud };
   } catch {
     return initialState;
   }
+}
+
+/** Respuestas de él que ella todavía no vio → aviso. */
+function replyReminders({ inbox = [], seenReplyAt }) {
+  const last = inbox.at(-1);
+  if (!last || (seenReplyAt && last.at <= seenReplyAt)) return [];
+  return [{ id: `reply:${last.at}`, type: 'reply', time: '00:00', title: `${last.name || 'Tu pareja'} te respondió 💌`, body: last.text }];
 }
 
 const StoreContext = createContext(null);
@@ -76,7 +87,8 @@ export function StoreProvider({ children }) {
       summary,
       reminders: state.role === 'partner'
         ? partnerReminders(state.partner.snapshot, state.partner.prefs, today, state.partner.seenMomentAt)
-        : dueReminders(summary, state.settings.reminders, today, { pillTaken: Boolean(state.logs[today]?.pill) }),
+        : [...dueReminders(summary, state.settings.reminders, today, { pillTaken: Boolean(state.logs[today]?.pill) }),
+          ...replyReminders(state.sharing)],
       notificationsEnabled: state.role === 'partner' ? state.partner.prefs.enabled : state.settings.reminders.enabled,
       can: (feature) => hasFeature(state.plan, feature),
     };
@@ -118,7 +130,27 @@ export function StoreProvider({ children }) {
       linkPartner: (snapshot) => setState((s) => ({
         ...s, onboarded: true, role: 'partner', partner: { ...s.partner, snapshot, linkedAt: new Date().toISOString(), seenMomentAt: null, replies: [] },
       })),
-      unlinkPartner: () => setState((s) => ({ ...s, onboarded: false, role: null, partner: { ...initialState.partner } })),
+      unlinkPartner: () => setState((s) => ({
+        ...s, onboarded: false, role: null, partner: { ...initialState.partner, prefs: s.partner.prefs }, cloud: { ...initialState.cloud },
+      })),
+      // --- conexión con el servidor ---
+      updateCloud: (patch) => setState((s) => ({ ...s, cloud: { ...s.cloud, ...patch } })),
+      /** Ella se desvincula: borra la conexión pero conserva su ciclo y su dispositivo registrado. */
+      resetPairing: () => setState((s) => ({
+        ...s, cloud: { ...initialState.cloud, deviceId: s.cloud.deviceId, token: s.cloud.token },
+        sharing: { ...s.sharing, inbox: [], seenReplyAt: null, inviteCode: null },
+      })),
+      setPartnerSnapshot: (snapshot) => setState((s) => ({ ...s, partner: { ...s.partner, snapshot } })),
+      setPartnerUnlinked: () => setState((s) => ({ ...s, partner: { ...s.partner, unlinked: true } })),
+      updatePartner: (patch) => setState((s) => ({ ...s, partner: { ...s.partner, ...patch } })),
+      receiveReplies: (items, since) => setState((s) => ({
+        ...s, cloud: { ...s.cloud, messagesSince: since ?? s.cloud.messagesSince },
+        sharing: { ...s.sharing, inbox: [...s.sharing.inbox, ...items].slice(-20) },
+      })),
+      markRepliesSeen: () => setState((s) => ({ ...s, sharing: { ...s.sharing, seenReplyAt: s.sharing.inbox.at(-1)?.at ?? null } })),
+      markRepliesSent: (ats) => setState((s) => ({
+        ...s, partner: { ...s.partner, replies: s.partner.replies.map((r) => (ats.includes(r.at) ? { ...r, sent: true } : r)) },
+      })),
       updatePartnerPrefs: (patch) => setState((s) => ({ ...s, partner: { ...s.partner, prefs: { ...s.partner.prefs, ...patch } } })),
       markMomentSeen: (at) => setState((s) => ({ ...s, partner: { ...s.partner, seenMomentAt: at } })),
       sendReply: (text) => setState((s) => ({

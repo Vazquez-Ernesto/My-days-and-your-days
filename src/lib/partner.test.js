@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildSnapshot, snapshotView, partnerTips, partnerReminders, latestMoment, demoSnapshot,
-  makeInviteCode, inviteLink, inviteCodeFromHash, timeAgo, DEFAULT_SHARES, DEFAULT_PARTNER_PREFS,
+  makeInviteCode, inviteLink, parseInvite, timeAgo, DEFAULT_SHARES, DEFAULT_PARTNER_PREFS,
 } from './partner.js';
 import { startPeriod } from './cycle.js';
 
@@ -91,11 +91,14 @@ describe('invitación', () => {
     expect(makeInviteCode()).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     expect(makeInviteCode(() => 0)).toBe('AAAA-AAAA');
   });
-  it('arma el link y lo vuelve a leer', () => {
-    const link = inviteLink('AB2C-D3EF', 'https://x.github.io/My-days/');
-    expect(link).toBe('https://x.github.io/My-days/#invitacion-AB2C-D3EF');
-    expect(inviteCodeFromHash(new URL(link).hash)).toBe('AB2C-D3EF');
-    expect(inviteCodeFromHash('#otra-cosa')).toBeNull();
+  it('arma el link con código y clave, y lo vuelve a leer', () => {
+    const key = 'k'.repeat(43);
+    const link = inviteLink('AB2C-D3EF', key, 'https://x.github.io/My-days/');
+    expect(link).toBe(`https://x.github.io/My-days/#invitacion-AB2C-D3EF.${key}`);
+    expect(parseInvite(link)).toEqual({ code: 'AB2C-D3EF', key });
+    expect(parseInvite(`Mirá: ${link} 💞`)).toEqual({ code: 'AB2C-D3EF', key }); // pegado dentro de un mensaje
+    expect(parseInvite('#invitacion-AB2C-D3EF')).toBeNull(); // sin clave no sirve
+    expect(parseInvite('hola')).toBeNull();
   });
 });
 

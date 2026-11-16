@@ -17,8 +17,9 @@ const PARTNER_PHASE = {
 /**
  * Lo que ve ÉL. `preview` = ella mirando cómo la ve su pareja (sin avisos ni respuestas).
  */
-export default function PartnerHome({ snapshot, preview = false, onSettings, onClose }) {
-  const { today, reminders, markMomentSeen, sendReply, state } = useStore();
+export default function PartnerHome({ snapshot, preview = false, onSettings, onClose, onSync, syncError }) {
+  const { today, reminders, markMomentSeen, sendReply, state, unlinkPartner } = useStore();
+  const online = !snapshot.demo && Boolean(state.cloud.pairId);
   const [sent, setSent] = useState(null);
   const view = snapshotView(snapshot, today);
   const s = view?.summary;
@@ -42,6 +43,20 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
     else { big = `${s.daysUntilNext}`; small = `día${s.daysUntilNext === 1 ? '' : 's'} para su período`; }
   }
 
+  if (!preview && state.partner.unlinked) {
+    return (
+      <section className="screen">
+        <Header title="My Days" onSettings={onSettings} />
+        <div className="card center stack">
+          <div className="hero-emoji">💔</div>
+          <h2>Ya no estás vinculado</h2>
+          <p className="muted">Tu pareja terminó el vínculo, así que ya no podés ver su ciclo.</p>
+          <button className="btn btn--primary" onClick={unlinkPartner}>Volver al inicio</button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="screen">
       {preview ? (
@@ -54,9 +69,20 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
         <span className="avatar" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
         <div className="grow">
           <strong>{preview ? `Así te ve tu pareja, ${name}` : `Compartiendo con ${name}`}</strong>
-          <p className="muted small">Actualizado {timeAgo(snapshot.updatedAt)}{snapshot.demo ? ' · datos de ejemplo' : ''}</p>
+          <p className="muted small">
+            {snapshot.waiting ? 'Vinculado ✓' : `Actualizado ${timeAgo(snapshot.updatedAt)}`}{snapshot.demo ? ' · datos de ejemplo' : ''}
+          </p>
         </div>
+        {online && !preview && <button className="btn btn--soft btn--small" onClick={onSync}>Actualizar</button>}
       </div>
+      {online && syncError && <p className="notice notice--error" role="alert">No pudimos actualizar: revisá tu conexión.</p>}
+
+      {snapshot.waiting && (
+        <div className="card center stack" role="status">
+          <p><strong>¡Listo, ya están vinculados! 💞</strong></p>
+          <p className="muted small">Esperando que tu pareja abra My Days para compartir sus datos. Se actualiza solo.</p>
+        </div>
+      )}
 
       {!preview && reminders.filter((r) => r.type !== 'moment').map((r) => (
         <div key={r.id} className="card reminder" role="status">
@@ -82,7 +108,11 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
           )}
           {!preview && (
             sent ? (
-              <p className="notice" role="status">Enviaste “{sent}”. 🧪 Se entregará cuando conectemos el servidor.</p>
+              <p className="notice" role="status">
+                {online
+                  ? (state.partner.replies.at(-1)?.sent ? `Enviaste “${sent}” ✓` : `Enviando “${sent}”…`)
+                  : `Enviaste “${sent}”. 🧪 Con datos de ejemplo no se envía a nadie.`}
+              </p>
             ) : (
               <>
                 <p className="muted small">Respondele con un toque:</p>
@@ -112,7 +142,7 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
             <CycleTimeline summary={s} start={view.periods.at(-1).start} hideFertile={!showFertile} />
           </div>
         </>
-      ) : (
+      ) : !snapshot.waiting && (
         <div className="card center"><p className="muted">{name} no comparte su ciclo por ahora.</p></div>
       )}
 

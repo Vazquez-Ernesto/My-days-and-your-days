@@ -1,0 +1,16 @@
+# Blueprint de Render: crea el servidor del modo pareja.
+# Render → New → Blueprint → este repositorio. La DATABASE_URL se carga a mano (no va en el repo).
+services:
+  - type: web
+    name: mydays-server
+    runtime: docker
+    rootDir: server
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: ohio            # misma zona que la base de Neon (us-east-2)
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DATABASE_URL   # la URL DIRECTA de Neon (sin -pooler)
+        sync: false         # Render la pide en el momento de crear el servicio

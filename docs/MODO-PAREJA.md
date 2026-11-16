@@ -34,25 +34,35 @@ Lo garantiza `buildSnapshot()` en `src/lib/partner.js` (con tests).
 - Ella: "Mi momento" + deseo en Hoy; en Ajustes: nombre, permisos, **Invitar** (QR + link) y **Ver lo que ve tu pareja**.
 - Él puede probar con **datos de ejemplo**. Sus respuestas quedan guardadas para enviarse en la etapa B.
 
-## Etapa B — Servidor (Java 21 + Spring Boot 3 + PostgreSQL)
+## Etapa B — Servidor (Java 21 + Spring Boot 4 + PostgreSQL)
+
+Avance:
+- [x] **B1 — API** en `server/`: dispositivos, invitaciones, vínculo, snapshot y mensajes cifrados.
+  27 tests (unitarios, Mockito e integración), verificados también contra PostgreSQL 16 real.
+- [x] **B2 — App conectada**: cifrado AES-GCM en el teléfono (`src/lib/crypto.js`), cliente de la API (`src/lib/api.js`),
+  sincronización (`src/lib/useCloudSync.js`), vincular pegando el link, respuestas de él, desvincular.
+  Test E2E con dos navegadores contra el servidor real que verifica que **nada legible viaja por la red**.
+- [ ] **B3 — Hosting** del servidor y la base (requiere crear una cuenta).
+- [ ] **B4 — Notificaciones push** (Web Push / VAPID).
 
 ### Cifrado de extremo a extremo
 1. Ella genera una clave AES-256-GCM en su teléfono (Web Crypto API).
 2. El link de invitación lleva el código **y la clave en el fragmento** (`#invitacion-CODIGO.CLAVE`).
    El fragmento nunca se envía al servidor.
+   En iPhone, Safari y la app instalada no comparten datos: él vincula **desde la app** con "Pegar link de invitación".
 3. Ella sube el snapshot **cifrado**; él lo baja y lo descifra. El servidor solo guarda bytes ilegibles.
 
-### Endpoints (borrador)
+### Endpoints (detalle en [`server/README.md`](../server/README.md))
 | Método | Ruta | Qué hace |
 |---|---|---|
 | POST | `/api/devices` | registra un dispositivo, devuelve `deviceId` + token |
 | POST | `/api/pairs` | ella crea una invitación → `code` (vence en 24 h) |
-| POST | `/api/pairs/{code}/join` | él acepta la invitación |
+| POST | `/api/pairs/join` | él acepta la invitación (`{ code }`) |
 | DELETE | `/api/pairs/{id}` | cualquiera de los dos desvincula |
 | PUT | `/api/pairs/{id}/snapshot` | ella sube el snapshot cifrado |
 | GET | `/api/pairs/{id}/snapshot` | él lo descarga |
-| POST | `/api/pairs/{id}/messages` | momentos y respuestas (cifrados) |
-| POST | `/api/push/subscriptions` | guarda la suscripción Web Push del dispositivo |
+| POST/GET | `/api/pairs/{id}/messages` | momentos y respuestas (cifrados) |
+| POST | `/api/push/subscriptions` | guarda la suscripción Web Push del dispositivo (B4) |
 
 ### Notificaciones push
 - **Web Push (VAPID)**: funciona en iPhone con la app instalada en el inicio (iOS 16.4+).
@@ -61,7 +71,7 @@ Lo garantiza `buildSnapshot()` en `src/lib/partner.js` (con tests).
 - Esto también resuelve los avisos **con la app cerrada** para ella.
 
 ### Tests
-- Unitarios con JUnit 5 + Mockito; de integración con Testcontainers (PostgreSQL real).
+- Unitarios con JUnit 5 + Mockito; integración con MockMvc (H2) y en CI contra PostgreSQL 16 real.
 - Contrato de la API con los tests E2E de Playwright existentes.
 
 ## Etapa C — Antes de vender

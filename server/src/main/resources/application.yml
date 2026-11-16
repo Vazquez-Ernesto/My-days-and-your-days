@@ -1,0 +1,47 @@
+# Configuración por defecto (desarrollo): base H2 en memoria, no hay que instalar nada.
+spring:
+  application:
+    name: mydays-server
+  datasource:
+    url: jdbc:h2:mem:mydays;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    hikari:
+      maximum-pool-size: 5   # el plan gratis de Neon tiene pocas conexiones; 5 alcanza de sobra
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # las tablas las crea Flyway; Hibernate solo verifica que coincidan
+  flyway:
+    enabled: true
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  invite-ttl: PT24H        # las invitaciones vencen a las 24 horas (formato ISO-8601)
+  cors:
+    allowed-origins: >-
+      http://localhost:5173,http://localhost:4173,https://vazquez-ernesto.github.io
+
+---
+# Producción con Neon: alcanza con la variable DATABASE_URL tal como la da Neon (postgresql://...).
+# DatabaseUrlEnvironmentPostProcessor la convierte a JDBC. Usar la URL DIRECTA (sin -pooler): Flyway la necesita.
+#
+# Perfil "postgres" (CI): DATABASE_URL en formato jdbc: + DATABASE_USER / DATABASE_PASSWORD.
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/mydays}
+    username: ${DATABASE_USER:mydays}
+    password: ${DATABASE_PASSWORD:mydays}

@@ -4,6 +4,7 @@ import { MOMENTS, timeAgo } from '../lib/partner.js';
 /** "Mi momento": ella comparte cómo se siente y su deseo. */
 export default function MomentCard() {
   const { state, today, shareMoment, setDesire } = useStore();
+  const linked = state.cloud.status === 'active';
   const { moments, desire, name } = state.sharing;
   const last = moments.at(-1);
   const current = last && last.at.slice(0, 10) === today ? last.id : null;
@@ -15,7 +16,8 @@ export default function MomentCard() {
       <div>
         <h2 className="card__title">Mi momento 💞</h2>
         <p className="muted small">
-          {last ? `Compartido ${timeAgo(last.at)}. ` : ''}Tu pareja lo verá cuando la vincules{name ? '' : ' (poné tu nombre en Ajustes)'}.
+          {last ? `Compartido ${timeAgo(last.at)}. ` : ''}
+          {linked ? 'Tu pareja lo ve al instante.' : `Tu pareja lo verá cuando la vincules${name ? '' : ' (poné tu nombre en Ajustes)'}.`}
         </p>
       </div>
       <div className="chips">

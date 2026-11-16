@@ -462,3 +462,11 @@ textarea, .input {
 .desire-view__bar i { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--fertile), var(--primary)); }
 .tips ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
 .tips li::marker { color: var(--primary); }
+
+/* ===== v0.5: conexión con el servidor ===== */
+.notice--error { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.notice--ok { background: color-mix(in srgb, #3fb68b 18%, transparent); }
+.link-status { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: var(--surface-2); }
+.link-status p { margin: 0; }
+.link-status--on { border: 1px solid color-mix(in srgb, #3fb68b 40%, var(--border)); }
+.partner-head .btn--small { flex: none; }

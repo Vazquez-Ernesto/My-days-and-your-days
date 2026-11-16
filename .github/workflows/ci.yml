@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
+    paths-ignore: ['docs/**']
   pull_request:
+    paths-ignore: ['docs/**']
 
 jobs:
   test:
@@ -17,6 +19,12 @@ jobs:
       - run: npm ci
       - name: Tests unitarios
         run: npm test
+      # Los tests E2E del modo pareja levantan el servidor Java real
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
       - name: Instalar Chromium para Playwright
         run: npx playwright install --with-deps chromium
       - name: Tests E2E

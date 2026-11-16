@@ -15,6 +15,7 @@ import PartnerCalendar from './screens/partner/PartnerCalendar.jsx';
 import PartnerReminders from './screens/partner/PartnerReminders.jsx';
 import PartnerSettings from './screens/partner/PartnerSettings.jsx';
 import { buildSnapshot } from './lib/partner.js';
+import { useCloudSync } from './lib/useCloudSync.js';
 import Icon from './components/Icons.jsx';
 import { permission, showNotification } from './lib/notifications.js';
 import { isTimeReached } from './lib/reminders.js';
@@ -76,6 +77,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   useTheme(state.settings.theme);
   useReminderNotifications();
+  const { syncNow, error: syncError } = useCloudSync();
 
   if (!state.onboarded) return <div className="app"><Onboarding /></div>;
   if (state.settings.pin && can('pinLock') && !unlocked) {
@@ -85,7 +87,7 @@ export default function App() {
   const isPartner = state.role === 'partner' && state.partner.snapshot;
   const nav = {
     onLog: setLogDate, onUpgrade: () => setShowPlans(true), onSettings: () => setShowSettings(true),
-    onInvite: () => setShowInvite(true), onPreview: () => setShowPreview(true),
+    onInvite: () => setShowInvite(true), onPreview: () => setShowPreview(true), onSync: syncNow, syncError,
   };
   const screens = isPartner ? {
     home: <PartnerHome snapshot={state.partner.snapshot} {...nav} />,
