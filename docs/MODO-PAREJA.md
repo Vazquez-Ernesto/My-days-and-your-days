@@ -39,7 +39,9 @@ Lo garantiza `buildSnapshot()` en `src/lib/partner.js` (con tests).
 Avance:
 - [x] **B1 — API** en `server/`: dispositivos, invitaciones, vínculo, snapshot y mensajes cifrados.
   27 tests (unitarios, Mockito e integración), verificados también contra PostgreSQL 16 real.
-- [ ] **B2 — App conectada**: cifrado AES-GCM en el teléfono, vincular de verdad, sincronizar.
+- [x] **B2 — App conectada**: cifrado AES-GCM en el teléfono (`src/lib/crypto.js`), cliente de la API (`src/lib/api.js`),
+  sincronización (`src/lib/useCloudSync.js`), vincular pegando el link, respuestas de él, desvincular.
+  Test E2E con dos navegadores contra el servidor real que verifica que **nada legible viaja por la red**.
 - [ ] **B3 — Hosting** del servidor y la base (requiere crear una cuenta).
 - [ ] **B4 — Notificaciones push** (Web Push / VAPID).
 
@@ -47,6 +49,7 @@ Avance:
 1. Ella genera una clave AES-256-GCM en su teléfono (Web Crypto API).
 2. El link de invitación lleva el código **y la clave en el fragmento** (`#invitacion-CODIGO.CLAVE`).
    El fragmento nunca se envía al servidor.
+   En iPhone, Safari y la app instalada no comparten datos: él vincula **desde la app** con "Pegar link de invitación".
 3. Ella sube el snapshot **cifrado**; él lo baja y lo descifra. El servidor solo guarda bytes ilegibles.
 
 ### Endpoints (detalle en [`server/README.md`](../server/README.md))

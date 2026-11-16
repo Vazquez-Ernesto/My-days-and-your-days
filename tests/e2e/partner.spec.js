@@ -59,12 +59,21 @@ test.describe('rol pareja (él)', () => {
     expect((await app.savedState()).partner.snapshot).toBeNull();
   });
 
-  test('abrir un link de invitación precarga el código', async ({ page }) => {
-    await page.goto('/#invitacion-AB2C-D3EF');
+  test('abrir un link de invitación lo precarga; un código inexistente da un error claro', async ({ page }) => {
+    const key = 'A'.repeat(43);
+    await page.goto(`/#invitacion-AB2C-D3EF.${key}`);
     await expect(page.getByRole('heading', { name: 'Vinculate con tu pareja' })).toBeVisible();
-    await expect(page.getByLabel('Código de invitación')).toHaveValue('AB2C-D3EF');
+    await expect(page.getByLabel('Link de invitación')).toHaveValue(new RegExp(`#invitacion-AB2C-D3EF\\.${key}$`));
     await page.getByRole('button', { name: 'Vincular' }).click();
-    await expect(page.getByRole('status')).toContainText('llega con el servidor');
+    await expect(page.getByRole('alert')).toContainText('No encontramos esa invitación');
+  });
+
+  test('un texto que no es una invitación se rechaza sin llamar al servidor', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Soy la pareja/ }).click();
+    await page.getByLabel('Link de invitación').fill('hola, ¿cómo estás?');
+    await page.getByRole('button', { name: 'Vincular' }).click();
+    await expect(page.getByRole('alert')).toContainText('no es una invitación de My Days');
   });
 });
 
@@ -100,6 +109,12 @@ test.describe('lado de ella', () => {
     await expect(app.ringBig).toHaveCount(0);
   });
 
+});
+
+// Sin fecha congelada: la invitación la crea el servidor con su reloj real y vence a las 24 h reales.
+test.describe('invitación (con servidor)', () => {
+  test.beforeEach(async ({ page }) => { await seed(page); });
+
   test('invitar: muestra código, QR y link', async ({ page }) => {
     const app = new App(page);
     await app.goto();
@@ -109,7 +124,7 @@ test.describe('lado de ella', () => {
     await expect(dialog.getByLabel('Código de invitación')).toHaveText(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     await expect(dialog.getByRole('img', { name: 'Código QR de invitación' })).toBeVisible();
     const code = await dialog.getByLabel('Código de invitación').textContent();
-    await expect(dialog.getByLabel('Link de invitación')).toHaveValue(new RegExp(`#invitacion-${code}$`));
+    await expect(dialog.getByLabel('Link de invitación')).toHaveValue(new RegExp(`#invitacion-${code}\\.[A-Za-z0-9_-]{43}$`));
     // el código se mantiene al volver a abrir
     await dialog.getByRole('button', { name: 'Cerrar' }).click();
     await page.getByRole('button', { name: 'Invitar' }).click();

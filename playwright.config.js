@@ -16,11 +16,21 @@ export default defineConfig({
   projects: [
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
-  // Probamos el build de producción (igual que lo que ve la usuaria, con service worker)
-  webServer: {
-    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    // El servidor Java (Spring Boot) con base H2 en memoria
+    {
+      command: process.platform === 'win32' ? 'cd server && mvnw.cmd -q spring-boot:run' : 'cd server && ./mvnw -q spring-boot:run',
+      url: 'http://localhost:8080/actuator/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 240_000,
+    },
+    // El build de producción de la app (igual que lo que ve la usuaria, con service worker), apuntando al servidor local
+    {
+      command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+      env: { VITE_API_URL: 'http://localhost:8080' },
+      url: 'http://localhost:4173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });
