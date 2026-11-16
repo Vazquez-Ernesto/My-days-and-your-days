@@ -1,7 +1,7 @@
 {
   "name": "my-days",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "engines": {
     "node": ">=20.19"
@@ -11,7 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:prod": "playwright test --config playwright.prod.config.js"
   },
   "dependencies": {
     "qrcode": "1.5.4",

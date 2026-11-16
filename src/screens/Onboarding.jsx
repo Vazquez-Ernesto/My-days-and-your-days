@@ -121,6 +121,7 @@ export default function Onboarding() {
               <button className="btn btn--primary btn--block" disabled={!linkText.trim() || linking} onClick={link}>
                 {linking ? 'Vinculando…' : 'Vincular'}
               </button>
+              {linking && <p className="muted small" role="status">La primera vez puede tardar hasta un minuto.</p>}
             </>
           ) : (
             <p className="notice" role="status">🧪 El servidor todavía no está conectado. Mientras tanto, probá con datos de ejemplo.</p>

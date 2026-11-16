@@ -29,6 +29,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          # Servidor del modo pareja (Render + Neon). No es un secreto: es una dirección pública.
+          VITE_API_URL: https://mydays-server.onrender.com
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
