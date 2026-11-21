@@ -61,3 +61,12 @@ export function formatShort(iso) {
 }
 
 export { MONTHS_SHORT };
+
+const WEEKDAYS_LONG = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+/** "Sábado 21 de noviembre" (solo la primera letra en mayúscula, como se escribe en castellano) */
+export function formatWeekday(iso) {
+  const d = fromISO(iso);
+  const day = WEEKDAYS_LONG[d.getUTCDay()];
+  return `${day[0].toUpperCase()}${day.slice(1)} ${d.getUTCDate()} de ${MONTHS[d.getUTCMonth()].toLowerCase()}`;
+}

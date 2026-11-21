@@ -1,6 +1,6 @@
 // Service worker de My Days: hace que la app funcione sin internet.
 // Al cambiar algo importante, subí la versión para que se borre la caché vieja.
-const CACHE = 'mydays-v0.7.0';
+const CACHE = 'mydays-v0.8.0';
 // Rutas relativas a la ubicación del service worker (funciona también en una subcarpeta)
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon.svg'];
 

@@ -1,7 +1,7 @@
 {
   "name": "my-days",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "engines": {
     "node": ">=20.19"
@@ -15,6 +15,7 @@
     "test:prod": "playwright test --config playwright.prod.config.js"
   },
   "dependencies": {
+    "@fontsource-variable/nunito": "5.3.0",
     "qrcode": "1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

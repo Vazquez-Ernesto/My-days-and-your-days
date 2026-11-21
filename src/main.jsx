@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import { StoreProvider } from './state/store.jsx';
+import '@fontsource-variable/nunito'; // tipografía incluida en la app (funciona sin internet)
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(

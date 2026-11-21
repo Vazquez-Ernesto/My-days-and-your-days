@@ -111,7 +111,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <main className="app__main">{content}</main>
+      <main className="app__main" key={`${tab}-${showSettings}-${showPreview}-${showQuiz}`}>{content}</main>
       <nav className="tabbar" aria-label="Navegación principal">
         {tabs.map((t) => (
           <button key={t.id} aria-label={t.label}
