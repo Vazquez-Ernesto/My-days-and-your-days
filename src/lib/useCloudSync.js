@@ -42,6 +42,15 @@ async function syncProfiles(api, { state, updateCloud, setPartnerProfile }, myNa
   setPartnerProfile(profile && { photo: profile.photo ?? null, name: profile.name ?? '' }, list.map((p) => p.updatedAt).sort().at(-1));
 }
 
+/** Las fotos son secundarias: si fallan, seguimos con lo importante (salvo que el vínculo ya no exista). */
+async function syncProfilesSafely(api, store, myName) {
+  try {
+    await syncProfiles(api, store, myName);
+  } catch (e) {
+    if (GONE.includes(e.code)) throw e;
+  }
+}
+
 /** Procesa mensajes del otro: respuestas de él (para ella) y cuestionarios (para los dos). */
 async function readMessages(api, { state, receiveQuiz }, since) {
   const c = state.cloud;
@@ -103,9 +112,9 @@ export function useCloudSync(api = defaultApi) {
         updateCloud({ lastNoteSent: `${today}|${note}` });
       }
       await sendQuizAnswers(api, ref.current, state.sharing.name);
-      await syncProfiles(api, ref.current, state.sharing.name);
       const { replies, last } = await readMessages(api, ref.current, c.messagesSince);
       if (last) receiveReplies(replies, last);
+      await syncProfilesSafely(api, ref.current, state.sharing.name); // al final: una foto nunca frena lo demás
     } catch (e) {
       if (GONE.includes(e.code)) return resetPairing(); // él la desvinculó
       throw e;
@@ -117,7 +126,6 @@ export function useCloudSync(api = defaultApi) {
     const c = state.cloud;
     try {
       await sendQuizAnswers(api, ref.current, state.partner.myName);
-      await syncProfiles(api, ref.current, state.partner.myName);
       const { last } = await readMessages(api, ref.current, state.partner.messagesSince);
       if (last) updatePartner({ messagesSince: last });
       const pending = state.partner.replies.filter((r) => !r.sent);
@@ -134,6 +142,7 @@ export function useCloudSync(api = defaultApi) {
       } catch (e) {
         if (e.code !== 'NO_SNAPSHOT') throw e; // todavía no compartió nada: seguimos esperando
       }
+      await syncProfilesSafely(api, ref.current, state.partner.myName); // al final: una foto nunca frena lo demás
     } catch (e) {
       if (GONE.includes(e.code)) return setPartnerUnlinked();
       throw e;

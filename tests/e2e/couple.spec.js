@@ -242,4 +242,18 @@ test.describe('modo pareja real (ella ↔ servidor ↔ él)', () => {
       expect(body).not.toContain('Ernesto');
     }
   });
+
+  test('si las fotos fallan (ej. el servidor se está actualizando), igual le llegan los datos de ella', async ({ browser }) => {
+    const { her, him, herApp, himApp } = await openPhones(browser);
+    // Simulamos que el endpoint de fotos no responde, del lado de los dos
+    for (const p of [her, him]) await p.route('**/profile*', (r) => r.fulfill({ status: 503, body: '{}' }));
+    const link = await createInvite(her, herApp);
+    await joinWith(him, himApp, link);
+    await her.reload();
+    await expect(async () => {
+      await him.getByRole('button', { name: 'Actualizar' }).click();
+      await expect(him.getByText('Compartiendo con Ana')).toBeVisible({ timeout: 1500 });
+    }).toPass({ timeout: 20_000 });
+    await expect(himApp.ringBig).toBeVisible();
+  });
 });
