@@ -70,6 +70,15 @@ export function buildSnapshot(state, now = new Date()) {
   return snap;
 }
 
+/**
+ * Si ella NO comparte la fertilidad, él no puede ver las fases "fértil" ni "ovulación":
+ * se muestran como folicular (antes de la ovulación) o lútea (después).
+ */
+export function visiblePhase(summary, showFertile) {
+  if (!summary || showFertile || !['fertile', 'ovulation'].includes(summary.phase)) return summary?.phase ?? null;
+  return summary.cycleDay < summary.ovulationDay ? 'follicular' : 'luteal';
+}
+
 /** Calcula el ciclo de ella a partir del snapshot (null si no comparte el ciclo). */
 export function snapshotView(snap, today) {
   if (!snap?.cycle) return null;

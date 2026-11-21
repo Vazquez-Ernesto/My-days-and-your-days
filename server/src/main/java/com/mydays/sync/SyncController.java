@@ -37,6 +37,18 @@ public class SyncController {
         return service.getSnapshot(device.getId(), pairId);
     }
 
+    @PutMapping("/profile")
+    public SyncService.ProfileView putProfile(@CurrentDevice Device device, @PathVariable UUID pairId,
+                                              @Valid @RequestBody EncryptedPayload body) {
+        return service.putProfile(device.getId(), pairId, body);
+    }
+
+    @GetMapping("/profiles")
+    public List<SyncService.ProfileView> getProfiles(@CurrentDevice Device device, @PathVariable UUID pairId,
+                                                     @RequestParam(required = false) Instant since) {
+        return service.getProfiles(device.getId(), pairId, since);
+    }
+
     @PostMapping("/messages")
     @ResponseStatus(HttpStatus.CREATED)
     public SyncService.MessageView postMessage(@CurrentDevice Device device, @PathVariable UUID pairId,

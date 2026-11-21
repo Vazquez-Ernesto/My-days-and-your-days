@@ -21,6 +21,7 @@ test.describe('rol pareja (él)', () => {
     await expect(page.getByRole('heading', { name: 'Cómo acompañarla hoy' })).toBeVisible();
     // Ella no comparte fertilidad: ni el anillo ni la barra de fases la muestran
     await expect(page.locator('.seg--fertile, .seg--ovulation, .tl--fertile, .timeline__ov')).toHaveCount(0);
+    await expect(page.locator('main')).not.toContainText(/fértil|ovulación|embarazo|fertilidad/i);
     await expect(page.getByText(/un abrazo vale más que un consejo/)).toBeVisible();
     await expect(page.getByText(/Antojos/).first()).toBeVisible();
     // Solo 3 pestañas y sin botón Registrar
@@ -97,6 +98,24 @@ test.describe('lado de ella', () => {
     await expect(page.getByRole('button', { name: 'Te llevo chocolate 🍫' })).toHaveCount(0); // en la vista previa no se responde
     await page.getByRole('button', { name: 'Volver' }).click();
     await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible();
+  });
+
+  test('en su ventana fértil, si no comparte la fertilidad, su pareja no ve NADA de fertilidad', async ({ page }) => {
+    await freezeDate(page, '2026-11-13'); // día 11 del ciclo: ventana fértil (días 10 a 16)
+    const app = new App(page);
+    await app.goto();
+    await app.openSettings();
+    await page.getByRole('button', { name: 'Ver lo que ve tu pareja' }).click();
+    await expect(app.ringBig).toBeVisible();
+    await expect(page.locator('main')).not.toContainText(/fértil|ovulación|embarazo|fertilidad|deseo suelen/i);
+    await expect(page.locator('.phase-chip')).toHaveText('Folicular');
+
+    // Si activa el permiso, ahí sí lo ve
+    await page.getByRole('button', { name: 'Volver' }).click();
+    await page.getByRole('switch', { name: 'Compartir: Ventana fértil y ovulación' }).check();
+    await page.getByRole('button', { name: 'Ver lo que ve tu pareja' }).click();
+    await expect(page.locator('.phase-chip')).toHaveText('Fértil');
+    await expect(page.locator('main')).toContainText('Fertilidad');
   });
 
   test('si deja de compartir el ciclo, la pareja no lo ve', async ({ page }) => {

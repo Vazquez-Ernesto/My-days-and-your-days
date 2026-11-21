@@ -4,12 +4,13 @@ import CycleRing from '../../components/CycleRing.jsx';
 import CycleTimeline from '../../components/CycleTimeline.jsx';
 import Header from '../../components/Header.jsx';
 import Icon from '../../components/Icons.jsx';
-import { SYMPTOM_EMOJI } from '../../components/DayLogSheet.jsx';
-import { PHASES, pregnancyChance } from '../../lib/cycle.js';
-import { snapshotView, latestMoment, partnerTips, timeAgo, REPLIES } from '../../lib/partner.js';
-import { CHANCE_TEXT } from '../Home.jsx';
 import QuizCard from '../../components/QuizCard.jsx';
 import SharedDay from '../../components/SharedDay.jsx';
+import { CoupleAvatars } from '../../components/Avatar.jsx';
+import { PHASES, pregnancyChance, nextFertileWindow } from '../../lib/cycle.js';
+import { snapshotView, latestMoment, partnerTips, timeAgo, visiblePhase, REPLIES } from '../../lib/partner.js';
+import { formatShort, diffDays } from '../../lib/dates.js';
+import { CHANCE_TEXT, Greeting, PHASE_SHORT } from '../Home.jsx';
 
 const PARTNER_PHASE = {
   menstrual: 'Está con su período', follicular: 'Fase folicular', fertile: 'Fase fértil',
@@ -21,29 +22,30 @@ const PARTNER_PHASE = {
  */
 export default function PartnerHome({ snapshot, preview = false, onSettings, onClose, onSync, syncError, onQuiz }) {
   const { today, reminders, markMomentSeen, sendReply, state, unlinkPartner } = useStore();
-  const online = !snapshot.demo && Boolean(state.cloud.pairId);
   const [sent, setSent] = useState(null);
+  const online = !snapshot.demo && Boolean(state.cloud.pairId);
   const view = snapshotView(snapshot, today);
   const s = view?.summary;
   const name = snapshot.name;
   const moment = latestMoment(snapshot);
   const showFertile = Boolean(snapshot.shares?.fertile);
   const symptomsToday = snapshot.days?.[today]?.symptoms ?? [];
-  const tips = partnerTips({ summary: s, symptomsToday, moment });
+  const phase = visiblePhase(s, showFertile); // sin permiso, nunca "fértil" ni "ovulación"
+  const tips = partnerTips({ summary: s && { ...s, phase }, symptomsToday, moment });
+  const next = view?.predictions?.[0];
+  const fertile = view && showFertile ? nextFertileWindow(view.periods, view.settings, view.predictions, today) : null;
+  const me = preview
+    ? { photo: state.partnerProfile.photo, name: state.partnerProfile.name || 'Tu pareja' }
+    : { photo: state.profile.photo, name: state.partner.myName };
+  const her = preview
+    ? { photo: state.profile.photo, name }
+    : { photo: state.partnerProfile.photo, name: state.partnerProfile.name || name };
 
   const reply = (text) => {
     sendReply(text);
     if (moment) markMomentSeen(moment.at);
     setSent(text);
   };
-
-  let big, small;
-  if (s) {
-    if (s.onPeriod) { big = `Día ${s.periodDay}`; small = 'de su período'; }
-    else if (s.phase === 'late') { big = `${-s.daysUntilNext}`; small = `día${s.daysUntilNext === -1 ? '' : 's'} de atraso`; }
-    else if (s.daysUntilNext === 0) { big = 'Hoy'; small = 'podría llegar su período'; }
-    else { big = `${s.daysUntilNext}`; small = `día${s.daysUntilNext === 1 ? '' : 's'} para su período`; }
-  }
 
   if (!preview && state.partner.unlinked) {
     return (
@@ -59,16 +61,22 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
     );
   }
 
+  let big, small;
+  if (s) {
+    if (s.onPeriod) { big = `Día ${s.periodDay}`; small = 'de su período'; }
+    else if (s.phase === 'late') { big = `${-s.daysUntilNext}`; small = `día${s.daysUntilNext === -1 ? '' : 's'} de atraso`; }
+    else if (s.daysUntilNext === 0) { big = 'Hoy'; small = 'podría llegar su período'; }
+    else { big = `${s.daysUntilNext}`; small = `día${s.daysUntilNext === 1 ? '' : 's'} para su período`; }
+  }
+
   return (
     <section className="screen">
-      {preview ? (
-        <Header title="Lo que ve tu pareja" onBack={onClose} />
-      ) : (
-        <Header title={name} onSettings={onSettings} />
-      )}
+      {preview
+        ? <Header title="Lo que ve tu pareja" onBack={onClose} />
+        : <Header title={<Greeting name={state.partner.myName?.trim()} today={today} />} onSettings={onSettings} />}
 
-      <div className="partner-head">
-        <span className="avatar" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
+      <div className="card couple-card">
+        <CoupleAvatars me={me} partner={her} size={46} />
         <div className="grow">
           <strong>{preview ? `Así te ve tu pareja, ${name}` : `Compartiendo con ${name}`}</strong>
           <p className="muted small">
@@ -93,14 +101,55 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
         </div>
       ))}
 
-      {!preview && <QuizCard onOpen={onQuiz} />}
+      {s ? (
+        <div className="hero">
+          <CycleRing summary={s} hideFertile={!showFertile}>
+            <span className={`phase-chip phase-chip--${phase}`}>{PHASE_SHORT[phase]}</span>
+            <span className="ring__big">{big}</span>
+            <span className="ring__small">{small}</span>
+            <span className="ring__day">Día {s.cycleDay} de su ciclo</span>
+          </CycleRing>
+        </div>
+      ) : !snapshot.waiting && (
+        <div className="card center"><p className="muted">{name} no comparte su ciclo por ahora.</p></div>
+      )}
+
+      {(next || moment || fertile) && (
+        <div className="widgets">
+          {next && (
+            <div className="widget widget--period">
+              <span className="widget__icon"><Icon name="drop" size={18} /></span>
+              <small>Su próximo período</small>
+              <strong>{formatShort(next.periodStart)}</strong>
+              <span className="widget__sub">en {diffDays(next.periodStart, today)} días</span>
+            </div>
+          )}
+          {fertile ? (
+            <div className="widget widget--fertile">
+              <span className="widget__icon"><Icon name="egg" size={18} /></span>
+              <small>Ventana fértil</small>
+              <strong>{fertile.active ? 'En curso' : `En ${fertile.daysUntil} día${fertile.daysUntil === 1 ? '' : 's'}`}</strong>
+              <span className="widget__sub">{formatShort(fertile.start)} – {formatShort(fertile.end)}</span>
+            </div>
+          ) : moment && (
+            <div className="widget widget--mood">
+              <span className="widget__icon widget__icon--emoji" aria-hidden="true">{moment.emoji}</span>
+              <small>Su momento</small>
+              <strong>{moment.label}</strong>
+              <span className="widget__sub">{timeAgo(moment.at)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {snapshot.days?.[today] && (
-        <div className="card stack">
+        <div className="card stack her-day">
           <h2 className="card__title">Su día hoy</h2>
           <SharedDay day={snapshot.days[today]} name={name} />
         </div>
       )}
+
+      {!preview && <QuizCard onOpen={onQuiz} />}
 
       {moment && (
         <div className="card stack partner-moment" role={!preview && reminders.some((r) => r.type === 'moment') ? 'status' : undefined}>
@@ -136,27 +185,6 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
         </div>
       )}
 
-      {s ? (
-        <>
-          <CycleRing summary={s} hideFertile={!showFertile}>
-            <span className="ring__big">{big}</span>
-            <span className="ring__small">{small}</span>
-            <span className="ring__day">Día {s.cycleDay} de su ciclo</span>
-          </CycleRing>
-          <div className="card stack">
-            <div>
-              <h2 className="card__title">{PARTNER_PHASE[s.phase]}</h2>
-              {showFertile && <p className={`chance chance--${pregnancyChance(s.cycleDay, s.cycleLength, s.periodLength)}`}>
-                {CHANCE_TEXT[pregnancyChance(s.cycleDay, s.cycleLength, s.periodLength)]}</p>}
-              {!showFertile && <p className="muted small">{PHASES[s.phase].tip}</p>}
-            </div>
-            <CycleTimeline summary={s} start={view.periods.at(-1).start} hideFertile={!showFertile} />
-          </div>
-        </>
-      ) : !snapshot.waiting && (
-        <div className="card center"><p className="muted">{name} no comparte su ciclo por ahora.</p></div>
-      )}
-
       {tips.length > 0 && (
         <div className="card stack tips">
           <h2 className="card__title">Cómo acompañarla hoy</h2>
@@ -164,6 +192,19 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
         </div>
       )}
 
+      {s && (
+        <div className="card stack">
+          <div className="row row--between">
+            <h2 className="card__title">{PARTNER_PHASE[phase]}</h2>
+            {showFertile && (() => {
+              const c = pregnancyChance(s.cycleDay, s.cycleLength, s.periodLength);
+              return <span className={`chance-pill chance-pill--${c}`} title={CHANCE_TEXT[c]}>{c === 'alta' ? 'Fertilidad alta' : c === 'media' ? 'Fertilidad media' : 'Fertilidad baja'}</span>;
+            })()}
+          </div>
+          <CycleTimeline summary={s} start={view.periods.at(-1).start} hideFertile={!showFertile} />
+          <p className="muted small">{PHASES[phase].tip}</p>
+        </div>
+      )}
 
       {!preview && state.partner.replies.length > 0 && (
         <p className="muted small center">Le enviaste {state.partner.replies.length} mensaje{state.partner.replies.length === 1 ? '' : 's'}.</p>

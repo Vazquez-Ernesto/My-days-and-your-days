@@ -23,6 +23,25 @@ async function sendQuizAnswers(api, { state, markQuizSent }, myName) {
   if (pending.length) markQuizSent(pending.map(([date]) => date));
 }
 
+/** Sube mi foto + nombre si cambiaron, y baja los de mi pareja (solo si cambiaron). */
+async function syncProfiles(api, { state, updateCloud, setPartnerProfile }, myName) {
+  const c = state.cloud;
+  const mine = { photo: state.profile.photo, name: myName || '' };
+  const hash = await fingerprint(JSON.stringify(mine));
+  if (hash !== c.profileHash) {
+    await api.putProfile(c.token, c.pairId, await encryptJSON(c.key, mine));
+    updateCloud({ profileHash: hash });
+  }
+  const list = await api.getProfiles(c.token, c.pairId, c.profilesSince);
+  if (!list.length) return;
+  const theirs = list.find((p) => !p.mine);
+  let profile = null;
+  if (theirs) {
+    try { profile = await decryptJSON(c.key, theirs); } catch { /* ilegible */ }
+  }
+  setPartnerProfile(profile && { photo: profile.photo ?? null, name: profile.name ?? '' }, list.map((p) => p.updatedAt).sort().at(-1));
+}
+
 /** Procesa mensajes del otro: respuestas de él (para ella) y cuestionarios (para los dos). */
 async function readMessages(api, { state, receiveQuiz }, since) {
   const c = state.cloud;
@@ -43,6 +62,7 @@ export function useCloudSync(api = defaultApi) {
   const ref = useRef(store);
   ref.current = store; // siempre la última versión del estado, sin reiniciar el intervalo
   const busy = useRef(false);
+  const again = useRef(false); // llegó un pedido mientras sincronizábamos: repetir al terminar
   const [error, setError] = useState(null);
 
   const syncOwner = useCallback(async () => {
@@ -83,6 +103,7 @@ export function useCloudSync(api = defaultApi) {
         updateCloud({ lastNoteSent: `${today}|${note}` });
       }
       await sendQuizAnswers(api, ref.current, state.sharing.name);
+      await syncProfiles(api, ref.current, state.sharing.name);
       const { replies, last } = await readMessages(api, ref.current, c.messagesSince);
       if (last) receiveReplies(replies, last);
     } catch (e) {
@@ -96,6 +117,7 @@ export function useCloudSync(api = defaultApi) {
     const c = state.cloud;
     try {
       await sendQuizAnswers(api, ref.current, state.partner.myName);
+      await syncProfiles(api, ref.current, state.partner.myName);
       const { last } = await readMessages(api, ref.current, state.partner.messagesSince);
       if (last) updatePartner({ messagesSince: last });
       const pending = state.partner.replies.filter((r) => !r.sent);
@@ -121,7 +143,8 @@ export function useCloudSync(api = defaultApi) {
   const syncNow = useCallback(async () => {
     const { state } = ref.current;
     const c = state.cloud;
-    if (!c.token || !c.pairId || !c.key || busy.current) return;
+    if (!c.token || !c.pairId || !c.key) return;
+    if (busy.current) { again.current = true; return; } // no lo perdemos: se repite al terminar
     if (state.role === 'partner' && state.partner.unlinked) return;
     busy.current = true;
     try {
@@ -133,8 +156,14 @@ export function useCloudSync(api = defaultApi) {
       setError(e);
     } finally {
       busy.current = false;
+      if (again.current) {
+        again.current = false;
+        setTimeout(() => syncNowRef.current(), 0);
+      }
     }
   }, [syncOwner, syncPartner]);
+  const syncNowRef = useRef(syncNow);
+  syncNowRef.current = syncNow;
 
   const { cloud, role } = store.state;
   const linked = Boolean(cloud.pairId && cloud.key);
@@ -158,7 +187,8 @@ export function useCloudSync(api = defaultApi) {
   }, [shareKey, syncNow]);
 
   // Cuestionario respondido o nota nueva → enviar enseguida
-  const quizPending = Object.values(store.state.quiz.days).filter((d) => d.mine && !d.sent).length;
+  const quizPending = Object.values(store.state.quiz.days).filter((d) => d.mine && !d.sent).length
+    + (store.state.profile.photo?.length ?? 0) + (role === 'partner' ? store.state.partner.myName : store.state.sharing.name).length;
   const noteToday = role === 'self' ? store.state.logs[store.today]?.partnerNote ?? '' : '';
   useEffect(() => {
     if (!linked) return undefined;

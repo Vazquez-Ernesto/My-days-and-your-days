@@ -33,9 +33,12 @@ const initialState = {
   // Conexión con el servidor (vacía = modo prueba, sin servidor)
   cloud: { deviceId: null, token: null, pairId: null, key: null, status: 'none', inviteCode: null, inviteExpiresAt: null,
     lastUploadHash: null, messagesSince: null, lastSyncAt: null,
-    pushEnabled: false, selfKey: null, scheduleHash: null, lastMomentSentAt: null, lastNoteSent: null },
+    pushEnabled: false, selfKey: null, scheduleHash: null, lastMomentSentAt: null, lastNoteSent: null,
+    profileHash: null, profilesSince: null },
   // Cuestionario en pareja: { 'YYYY-MM-DD': { mine: [..5], sent, theirs: [..5], theirName } }
   quiz: { days: {} },
+  profile: { photo: null },                     // mi foto (data URL, recortada a 192 px)
+  partnerProfile: { photo: null, name: '' },    // la foto y el nombre de mi pareja (llegan cifrados)
 };
 
 function load() {
@@ -51,7 +54,9 @@ function load() {
     const role = saved.role ?? (saved.onboarded ? 'self' : null);
     const cloud = { ...initialState.cloud, ...saved.cloud };
     const quiz = { ...initialState.quiz, ...saved.quiz };
-    return { ...initialState, ...saved, role, settings, sharing, partner, cloud, quiz };
+    const profile = { ...initialState.profile, ...saved.profile };
+    const partnerProfile = { ...initialState.partnerProfile, ...saved.partnerProfile };
+    return { ...initialState, ...saved, role, settings, sharing, partner, cloud, quiz, profile, partnerProfile };
   } catch {
     return initialState;
   }
@@ -137,7 +142,12 @@ export function StoreProvider({ children }) {
       })),
       unlinkPartner: () => setState((s) => ({
         ...s, onboarded: false, role: null, partner: { ...initialState.partner, prefs: s.partner.prefs }, cloud: { ...initialState.cloud },
-        quiz: { days: {} },
+        quiz: { days: {} }, partnerProfile: { ...initialState.partnerProfile },
+      })),
+      // --- perfil ---
+      setPhoto: (photo) => setState((s) => ({ ...s, profile: { ...s.profile, photo } })),
+      setPartnerProfile: (p, since) => setState((s) => ({
+        ...s, partnerProfile: p ? { ...s.partnerProfile, ...p } : s.partnerProfile, cloud: { ...s.cloud, profilesSince: since ?? s.cloud.profilesSince },
       })),
       // --- cuestionario ---
       answerQuiz: (date, answers) => setState((s) => ({
@@ -158,7 +168,7 @@ export function StoreProvider({ children }) {
         ...s, cloud: { ...initialState.cloud, deviceId: s.cloud.deviceId, token: s.cloud.token,
           pushEnabled: s.cloud.pushEnabled, selfKey: s.cloud.selfKey },
         sharing: { ...s.sharing, inbox: [], seenReplyAt: null, inviteCode: null },
-        quiz: { days: {} },
+        quiz: { days: {} }, partnerProfile: { ...initialState.partnerProfile },
       })),
       setPartnerSnapshot: (snapshot) => setState((s) => ({ ...s, partner: { ...s.partner, snapshot } })),
       setPartnerUnlinked: () => setState((s) => ({ ...s, partner: { ...s.partner, unlinked: true } })),

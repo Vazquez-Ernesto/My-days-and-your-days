@@ -192,4 +192,54 @@ test.describe('modo pareja real (ella ↔ servidor ↔ él)', () => {
     }).toPass({ timeout: 25_000 });
     await expect(her.locator('.quiz__detail').first()).toContainText(herPicks[0].trim());
   });
+
+  test('fotos de perfil: cada uno sube la suya, los dos ven la del otro (cifradas)', async ({ browser }) => {
+    const { her, him, herApp, himApp } = await openPhones(browser);
+    const sent = [];
+    for (const p of [her, him]) p.on('request', (r) => r.url().includes('/profile') && r.postData() && sent.push(r.postData()));
+    const link = await createInvite(her, herApp);
+    await joinWith(him, himApp, link);
+    await expect(him.getByText('¡Listo, ya están vinculados! 💞')).toBeVisible();
+
+    // Imagen de prueba generada en el navegador (un cuadrado de color)
+    const photo = async (page, color) => Buffer.from(await page.evaluate((c) => {
+      const cv = document.createElement('canvas'); cv.width = 300; cv.height = 200;
+      const ctx = cv.getContext('2d'); ctx.fillStyle = c; ctx.fillRect(0, 0, 300, 200);
+      return cv.toDataURL('image/png').split(',')[1];
+    }, color), 'base64');
+    const upload = async (page, app, color) => {
+      await app.openSettings();
+      await page.locator('input[type=file]').setInputFiles({ name: 'yo.png', mimeType: 'image/png', buffer: await photo(page, color) });
+      await expect(page.locator('.profile-card img')).toHaveAttribute('src', /^data:image\/jpeg/);
+      await page.getByRole('button', { name: 'Volver' }).click();
+    };
+
+    await her.reload();
+    await upload(her, herApp, '#e91e63');
+    await upload(him, himApp, '#3f51b5');
+    await him.getByLabel(/Tu nombre/).count(); // (su nombre lo pone en Ajustes)
+    await himApp.openSettings();
+    await him.getByLabel(/Tu nombre/).fill('Ernesto');
+    await him.getByRole('button', { name: 'Volver' }).click();
+
+    // Él ve la foto de Ana en "Compartiendo con Ana"
+    await expect(async () => {
+      await him.getByRole('button', { name: 'Actualizar' }).click();
+      await expect(him.locator('.couple-card').getByRole('img', { name: 'Foto de Ana' })).toBeVisible({ timeout: 1500 });
+    }).toPass({ timeout: 25_000 });
+
+    // Ella ve la foto y el nombre de él
+    await expect(async () => {
+      await her.reload();
+      await expect(her.getByRole('img', { name: 'Foto de Ernesto' })).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 25_000 });
+    await expect(her.getByText('Compartiendo con Ernesto')).toBeVisible();
+
+    // Nada legible viajó: ni la imagen ni los nombres
+    expect(sent.length).toBeGreaterThanOrEqual(2);
+    for (const body of sent) {
+      expect(body).not.toContain('data:image');
+      expect(body).not.toContain('Ernesto');
+    }
+  });
 });

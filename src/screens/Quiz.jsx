@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../state/store.jsx';
 import Header from '../components/Header.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { questionsFor, compare, syncLabel, quizStatus, QUESTIONS_PER_DAY } from '../lib/quiz.js';
 import { formatShort } from '../lib/dates.js';
 
@@ -21,7 +22,7 @@ export default function Quiz({ onBack }) {
   const isPartner = state.role === 'partner';
   const myName = (isPartner ? state.partner.myName : state.sharing.name) || 'Vos';
   const entry = state.quiz.days[today];
-  const theirName = (isPartner ? state.partner.snapshot?.name : entry?.theirName) || 'Tu pareja';
+  const theirName = (isPartner ? state.partner.snapshot?.name : entry?.theirName || state.partnerProfile.name) || 'Tu pareja';
   const questions = questionsFor(state.cloud.pairId, today);
   const status = quizStatus(entry);
   const [step, setStep] = useState(status === 'todo' ? -1 : QUESTIONS_PER_DAY);
@@ -77,9 +78,9 @@ export default function Quiz({ onBack }) {
 
       {status !== 'todo' && (
         <div className="card quiz__people">
-          <div><span className="avatar">{myName.slice(0, 1).toUpperCase()}</span><small>{myName}</small><small className="ok">Respondió ✓</small></div>
+          <div><Avatar photo={state.profile.photo} name={myName} size={52} /><small>{myName}</small><small className="ok">Respondió ✓</small></div>
           <span className="quiz__heart" aria-hidden="true">♥</span>
-          <div><span className="avatar">{theirName.slice(0, 1).toUpperCase()}</span><small>{theirName}</small>
+          <div><Avatar photo={state.partnerProfile.photo} name={theirName} size={52} /><small>{theirName}</small>
             <small className={entry?.theirs ? 'ok' : 'muted'}>{entry?.theirs ? 'Respondió ✓' : 'Respuesta pendiente'}</small></div>
         </div>
       )}

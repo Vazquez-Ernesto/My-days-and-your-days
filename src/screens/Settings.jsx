@@ -4,6 +4,7 @@ import { Stepper } from './Onboarding.jsx';
 import { PremiumGate, PremiumBadge } from '../components/Premium.jsx';
 import Header from '../components/Header.jsx';
 import PartnerShareCard from '../components/PartnerShareCard.jsx';
+import ProfileCard from '../components/ProfileCard.jsx';
 import { PLANS } from '../state/plans.js';
 import { useInstallPrompt, isStandalone, isIOS } from '../lib/install.js';
 
@@ -64,6 +65,8 @@ export default function Settings({ onUpgrade, onBack, onInvite, onPreview }) {
           ? <button className="btn btn--primary btn--small" onClick={onUpgrade}>Mejorar</button>
           : <button className="btn btn--outline btn--small" onClick={() => update({ plan: 'free' })}>Volver a Gratis (demo)</button>}
       </div>
+
+      <ProfileCard />
 
       <PartnerShareCard onInvite={onInvite} onPreview={onPreview} />
 

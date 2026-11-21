@@ -26,7 +26,7 @@ export default function QuizCard({ onOpen }) {
   const available = useQuizAvailable();
   if (!available) return null;
   const status = quizStatus(state.quiz.days[today]);
-  const partnerName = state.role === 'partner' ? state.partner.snapshot?.name : state.quiz.days[today]?.theirName || 'tu pareja';
+  const partnerName = state.role === 'partner' ? state.partner.snapshot?.name : state.quiz.days[today]?.theirName || state.partnerProfile.name || 'tu pareja';
   const text = {
     todo: '5 preguntas para conocerse más',
     waiting: `Esperando que ${partnerName} responda…`,
