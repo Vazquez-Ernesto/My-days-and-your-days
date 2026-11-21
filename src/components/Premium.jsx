@@ -21,9 +21,14 @@ export function AdBanner({ onUpgrade }) {
   const { can } = useStore();
   if (can('noAds')) return null;
   return (
-    <button className="ad" onClick={onUpgrade}>
-      <small>Anuncio</small>
-      <span>✨ Probá Premium 7 días gratis: sin anuncios, patrones de síntomas y vista anual</span>
+    <button className="promo" onClick={onUpgrade} aria-label="Probar Premium">
+      <span className="promo__badge">Anuncio</span>
+      <span className="promo__icon" aria-hidden="true">✨</span>
+      <span className="promo__text">
+        <strong>Probá Premium 7 días gratis</strong>
+        <small>Sin anuncios, patrones de síntomas y vista anual</small>
+      </span>
+      <span className="promo__go" aria-hidden="true">→</span>
     </button>
   );
 }

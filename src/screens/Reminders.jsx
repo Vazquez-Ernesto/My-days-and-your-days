@@ -30,16 +30,13 @@ function Row({ id, label, help, item, onChange, children }) {
           <strong>{label}</strong>
           {help && <p className="muted small">{help}</p>}
         </div>
+        {item.on && (
+          <input id={`rem-${id}-time`} type="time" className="time-chip" value={item.time} aria-label="Hora"
+            onChange={(e) => onChange({ time: e.target.value })} />
+        )}
         <Toggle id={`rem-${id}`} checked={item.on} onChange={(on) => onChange({ on })} label={label} />
       </div>
-      {item.on && (
-        <div className="rem-row__opts">
-          <label htmlFor={`rem-${id}-time`} className="muted small">Hora</label>
-          <input id={`rem-${id}-time`} type="time" className="input input--time" value={item.time}
-            onChange={(e) => onChange({ time: e.target.value })} />
-          {children}
-        </div>
-      )}
+      {item.on && children && <div className="rem-row__opts">{children}</div>}
     </div>
   );
 }
@@ -77,8 +74,8 @@ export default function Reminders({ onSettings }) {
           <Row key={key} id={key} label={label} help={help} item={prefs[key]} onChange={(p) => updateReminder(key, p)}>
             {key === 'periodStart' && (
               <span className="rem-row__extra">
-                <span className="muted small">Días antes</span>
-                <Stepper value={prefs.periodStart.daysBefore} min={1} max={5} unit="d"
+                <span className="muted small">Avisarme</span>
+                <Stepper value={prefs.periodStart.daysBefore} min={1} max={5} unit="d antes"
                   onChange={(v) => updateReminder('periodStart', { daysBefore: v })} />
               </span>
             )}
@@ -97,7 +94,7 @@ export default function Reminders({ onSettings }) {
         <Row id="appointment" label="Cita con el médico" help="Te avisamos el día anterior y el mismo día"
           item={prefs.appointment} onChange={(p) => updateReminder('appointment', p)}>
           <label htmlFor="rem-appointment-date" className="muted small">Fecha</label>
-          <input id="rem-appointment-date" type="date" className="input input--time" value={prefs.appointment.date}
+          <input id="rem-appointment-date" type="date" className="time-chip" value={prefs.appointment.date}
             onChange={(e) => updateReminder('appointment', { date: e.target.value })} />
           <input id="rem-appointment-note" className="input" placeholder="Ej.: Ginecóloga, control anual"
             value={prefs.appointment.note} onChange={(e) => updateReminder('appointment', { note: e.target.value })} />

@@ -3,7 +3,7 @@ import {
   groupPeriods, cycleLengths, averages, predictCycles, cycleSummary,
   startPeriod, endPeriod, dayStatus,
 } from './cycle.js';
-import { addDays, monthMatrix, diffDays } from './dates.js';
+import { addDays, monthMatrix, diffDays, formatWeekday } from './dates.js';
 
 const settings = { cycleLength: 28, periodLength: 5 };
 
@@ -11,6 +11,10 @@ describe('dates', () => {
   it('suma días cruzando meses y años', () => {
     expect(addDays('2026-12-30', 3)).toBe('2027-01-02');
     expect(addDays('2024-02-28', 1)).toBe('2024-02-29'); // bisiesto
+  });
+  it('fecha larga en castellano: solo la primera letra en mayúscula', () => {
+    expect(formatWeekday('2026-11-21')).toBe('Sábado 21 de noviembre');
+    expect(formatWeekday('2026-11-23')).toBe('Lunes 23 de noviembre');
   });
   it('calcula diferencias de días', () => {
     expect(diffDays('2026-03-01', '2026-02-01')).toBe(28);
