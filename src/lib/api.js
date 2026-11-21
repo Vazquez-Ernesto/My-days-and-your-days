@@ -55,6 +55,9 @@ export function createApi(baseUrl = API_URL, fetchImpl = (...args) => fetch(...a
     putSnapshot: (token, pairId, payload) => request(`/api/pairs/${pairId}/snapshot`, { method: 'PUT', token, body: payload }),
     getSnapshot: (token, pairId) => request(`/api/pairs/${pairId}/snapshot`, { token }),
     postMessage: (token, pairId, payload) => request(`/api/pairs/${pairId}/messages`, { method: 'POST', token, body: payload }),
+    putProfile: (token, pairId, payload) => request(`/api/pairs/${pairId}/profile`, { method: 'PUT', token, body: payload }),
+    getProfiles: (token, pairId, since) =>
+      request(`/api/pairs/${pairId}/profiles${since ? `?since=${encodeURIComponent(since)}` : ''}`, { token }),
     getPushKey: () => request('/api/push/public-key'),
     putSubscription: (token, sub) => request('/api/push/subscription', { method: 'PUT', token, body: sub }),
     deleteSubscription: (token) => request('/api/push/subscription', { method: 'DELETE', token }),

@@ -216,6 +216,31 @@ class ApiFlowIT {
     }
 
     @Test
+    void perfiles_cadaUnoSubeElSuyo_yLosDosLosVen() throws Exception {
+        String pairId = vincular();
+        String base = "/api/pairs/" + pairId;
+        mvc.perform(as(ella, put(base + "/profile")).content("{\"ciphertext\":\"Zm90b0VsbGE=\",\"iv\":\"AAECAwQFBgcICQoL\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.mine").value(true));
+        clock.advance(Duration.ofMinutes(1));
+        mvc.perform(as(el, put(base + "/profile")).content("{\"ciphertext\":\"Zm90b0VsLnY=\",\"iv\":\"AAECAwQFBgcICQoL\"}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(as(ella, get(base + "/profiles"))).andExpect(jsonPath("$", hasSize(2)));
+        // pidiendo solo lo nuevo, ella baja únicamente la foto de él
+        mvc.perform(as(ella, get(base + "/profiles").param("since", "2026-11-16T12:00:30Z")))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].mine").value(false))
+                .andExpect(jsonPath("$[0].ciphertext").value("Zm90b0VsLnY="));
+        // un extraño no puede ni subir ni ver
+        mvc.perform(as(extrano, get(base + "/profiles"))).andExpect(status().isForbidden());
+        mvc.perform(as(extrano, put(base + "/profile")).content(SNAPSHOT)).andExpect(status().isForbidden());
+        // al desvincular se borran
+        mvc.perform(as(el, delete(base))).andExpect(status().isNoContent());
+        String nuevo = JsonPath.read(json(as(ella, post("/api/pairs"))), "$.pairId");
+        mvc.perform(as(ella, get("/api/pairs/" + nuevo + "/profiles"))).andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
     void healthCheckParaElHosting() throws Exception {
         mvc.perform(get("/actuator/health")).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("UP"));
     }

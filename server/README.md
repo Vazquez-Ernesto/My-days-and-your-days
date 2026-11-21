@@ -68,6 +68,8 @@ Los errores vuelven como `{ "status": 410, "code": "INVITE_EXPIRED", "detail": "
 | PUT | `/api/pairs/{id}/snapshot` | ella | sube lo que comparte (cifrado) |
 | GET | `/api/pairs/{id}/snapshot` | los dos | descarga lo compartido |
 | POST | `/api/pairs/{id}/messages` | los dos | momento o respuesta (cifrado) |
+| PUT | `/api/pairs/{id}/profile` | los dos | sube su foto y nombre (cifrados) |
+| GET | `/api/pairs/{id}/profiles?since=` | los dos | perfiles actualizados desde `since` |
 | GET | `/api/pairs/{id}/messages?since=` | los dos | mensajes nuevos |
 | GET | `/api/push/public-key` | cualquiera | clave pública VAPID para suscribirse |
 | PUT | `/api/push/subscription` | los dos | registra la suscripción push del teléfono |
@@ -80,7 +82,7 @@ Los errores vuelven como `{ "status": 410, "code": "INVITE_EXPIRED", "detail": "
 `UNAUTHORIZED` · `INVITE_NOT_FOUND` · `INVITE_EXPIRED` · `CANNOT_JOIN_OWN_INVITE` · `ALREADY_PAIRED` ·
 `NO_PAIR` · `PAIR_NOT_FOUND` · `NOT_A_MEMBER` · `OWNER_ONLY` · `NO_SNAPSHOT` · `PAIR_NOT_ACTIVE` ·
 `MESSAGE_TOO_LARGE` · `VALIDATION_ERROR` · `MALFORMED_JSON` · `PUSH_ENDPOINT_NOT_ALLOWED` · `PUSH_KEYS_INVALID` ·
-`NO_PUSH_SUBSCRIPTION` · `SCHEDULE_TOO_LARGE`
+`NO_PUSH_SUBSCRIPTION` · `SCHEDULE_TOO_LARGE` · `PROFILE_TOO_LARGE`
 
 ## Producción (Neon)
 

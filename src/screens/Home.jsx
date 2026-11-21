@@ -16,7 +16,7 @@ export const CHANCE_TEXT = {
   alta: 'Alta posibilidad de quedar embarazada',
 };
 
-const PHASE_SHORT = {
+export const PHASE_SHORT = {
   menstrual: 'Período', follicular: 'Folicular', fertile: 'Fértil', ovulation: 'Ovulación', luteal: 'Lútea', late: 'Atraso',
 };
 

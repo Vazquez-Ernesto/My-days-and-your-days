@@ -21,14 +21,16 @@ public class SyncService {
     private final PairService pairs;
     private final SnapshotRepository snapshots;
     private final MessageRepository messages;
+    private final ProfileRepository profiles;
     private final Clock clock;
     private final ApplicationEventPublisher events;
 
-    public SyncService(PairService pairs, SnapshotRepository snapshots, MessageRepository messages, Clock clock,
-                       ApplicationEventPublisher events) {
+    public SyncService(PairService pairs, SnapshotRepository snapshots, MessageRepository messages, ProfileRepository profiles,
+                       Clock clock, ApplicationEventPublisher events) {
         this.pairs = pairs;
         this.snapshots = snapshots;
         this.messages = messages;
+        this.profiles = profiles;
         this.clock = clock;
         this.events = events;
     }
@@ -75,6 +77,35 @@ public class SyncService {
         Instant after = since != null ? since : Instant.EPOCH;
         return messages.findByPairIdAndCreatedAtAfterOrderByCreatedAtAsc(pairId, after, Limit.of(MESSAGES_PAGE))
                 .stream().map(m -> MessageView.of(m, deviceId)).toList();
+    }
+
+    static final int MAX_PROFILE_LENGTH = 200_000;
+
+    /** Cada integrante sube su propio perfil (foto + nombre, cifrados). No genera notificaciones. */
+    @Transactional
+    public ProfileView putProfile(UUID deviceId, UUID pairId, EncryptedPayload body) {
+        pairs.requireMember(deviceId, pairId);
+        if (body.ciphertext().length() > MAX_PROFILE_LENGTH) {
+            throw new ApiException(org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE, "PROFILE_TOO_LARGE", "La foto es demasiado grande");
+        }
+        Profile.Key key = new Profile.Key(pairId, deviceId);
+        Profile p = profiles.findById(key).orElseGet(() -> new Profile(key));
+        p.update(body.ciphertext(), body.iv(), Instant.now(clock));
+        return ProfileView.of(profiles.save(p), deviceId);
+    }
+
+    /** Perfiles del vínculo actualizados después de `since` (para no bajar las fotos en cada sincronización). */
+    @Transactional(readOnly = true)
+    public List<ProfileView> getProfiles(UUID deviceId, UUID pairId, Instant since) {
+        pairs.requireMember(deviceId, pairId);
+        return profiles.findByIdPairIdAndUpdatedAtAfter(pairId, since != null ? since : Instant.EPOCH)
+                .stream().map(p -> ProfileView.of(p, deviceId)).toList();
+    }
+
+    public record ProfileView(boolean mine, String ciphertext, String iv, Instant updatedAt) {
+        static ProfileView of(Profile p, UUID viewer) {
+            return new ProfileView(p.getId().deviceId().equals(viewer), p.getCiphertext(), p.getIv(), p.getUpdatedAt());
+        }
     }
 
     public record SnapshotView(String ciphertext, String iv, Instant updatedAt) {

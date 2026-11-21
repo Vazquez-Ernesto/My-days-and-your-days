@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildSnapshot, snapshotView, partnerTips, partnerReminders, latestMoment, demoSnapshot,
-  makeInviteCode, inviteLink, parseInvite, timeAgo, DEFAULT_SHARES, DEFAULT_PARTNER_PREFS,
+  makeInviteCode, inviteLink, parseInvite, timeAgo, visiblePhase, DEFAULT_SHARES, DEFAULT_PARTNER_PREFS,
 } from './partner.js';
 import { startPeriod } from './cycle.js';
 
@@ -69,6 +69,21 @@ describe('vista de él', () => {
 
   it('el último momento trae emoji y texto', () => {
     expect(latestMoment(buildSnapshot(baseState(), NOW))).toMatchObject({ id: 'sensitive', emoji: '🥺', label: 'Sensible' });
+  });
+});
+
+describe('privacidad de la fertilidad', () => {
+  it('si ella no la comparte, la fase fértil y la ovulación no se ven', () => {
+    const s = (phase, cycleDay) => ({ phase, cycleDay, ovulationDay: 15 });
+    expect(visiblePhase(s('fertile', 12), false)).toBe('follicular');
+    expect(visiblePhase(s('ovulation', 15), false)).toBe('luteal');
+    expect(visiblePhase(s('fertile', 16), false)).toBe('luteal');
+    expect(visiblePhase(s('menstrual', 2), false)).toBe('menstrual');
+    expect(visiblePhase(s('fertile', 12), true)).toBe('fertile');
+  });
+  it('los consejos tampoco delatan la fase fértil', () => {
+    const tips = partnerTips({ summary: { phase: visiblePhase({ phase: 'fertile', cycleDay: 12, ovulationDay: 15 }, false) } });
+    expect(tips.join(' ')).not.toMatch(/deseo|fértil|embarazo/i);
   });
 });
 

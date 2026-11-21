@@ -3,6 +3,7 @@ import { useStore } from '../../state/store.jsx';
 import Header from '../../components/Header.jsx';
 import { timeAgo } from '../../lib/partner.js';
 import { api } from '../../lib/api.js';
+import ProfileCard from '../../components/ProfileCard.jsx';
 
 export default function PartnerSettings({ onBack }) {
   const { state, updateSettings, unlinkPartner, updatePartner } = useStore();
@@ -34,11 +35,7 @@ export default function PartnerSettings({ onBack }) {
           <button className="btn btn--danger btn--small" onClick={() => setConfirm(true)}>Desvincular</button>
         )}
       </div>
-      <div className="card stack-sm">
-        <label htmlFor="partner-name"><strong>Tu nombre</strong> <span className="muted small">(lo ve ella cuando le respondés)</span></label>
-        <input id="partner-name" className="input" placeholder="Ej.: Ernesto" maxLength={30} value={state.partner.myName}
-          onChange={(e) => updatePartner({ myName: e.target.value })} />
-      </div>
+      <ProfileCard />
       <div className="card">
         <h3>Apariencia</h3>
         <div className="segmented">

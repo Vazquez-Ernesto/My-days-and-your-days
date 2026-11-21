@@ -1,5 +1,6 @@
 import { useStore } from '../state/store.jsx';
 import { MOMENTS, timeAgo } from '../lib/partner.js';
+import { CoupleAvatars } from './Avatar.jsx';
 
 /** "Mi momento": ella comparte cómo se siente y su deseo. */
 export default function MomentCard() {
@@ -13,12 +14,18 @@ export default function MomentCard() {
 
   return (
     <div className="card stack moment-card">
-      <div>
-        <h2 className="card__title">Mi momento 💞</h2>
+      <div className={linked ? 'row' : ''}>
+        {linked && (
+          <CoupleAvatars me={{ photo: state.profile.photo, name }} size={40}
+            partner={{ photo: state.partnerProfile.photo, name: state.partnerProfile.name }} />
+        )}
+        <div className="grow">
+        <h2 className="card__title">{linked ? `Compartiendo con ${state.partnerProfile.name || 'tu pareja'}` : 'Mi momento 💞'}</h2>
         <p className="muted small">
           {last ? `Compartido ${timeAgo(last.at)}. ` : ''}
-          {linked ? 'Tu pareja lo ve al instante.' : `Tu pareja lo verá cuando la vincules${name ? '' : ' (poné tu nombre en Ajustes)'}.`}
+          {linked ? 'Contale cómo te sentís: lo ve al instante.' : `Tu pareja lo verá cuando la vincules${name ? '' : ' (poné tu nombre en Ajustes)'}.`}
         </p>
+        </div>
       </div>
       <div className="chips">
         {MOMENTS.map((m) => (
