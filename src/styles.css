@@ -348,13 +348,62 @@ textarea, .input {
 .stepper span { min-width: 60px; text-align: center; }
 
 /* ===== Onboarding / PIN ===== */
-.onboarding, .pin { min-height: 100vh; padding: 32px 20px; display: flex; flex-direction: column; justify-content: center; }
+.pin { min-height: 100vh; min-height: 100dvh; padding: 32px 20px; display: flex; flex-direction: column; justify-content: center; }
+/* ===== Bienvenida =====
+   guías `responsive-design` (100dvh: la barra de Safari no tapa el botón) y
+   `form-factor-adaptation` (márgenes seguros del notch, títulos balanceados) */
+.onboarding { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; gap: 18px;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 20px max(24px, env(safe-area-inset-bottom, 0px));
+  max-inline-size: 30rem; margin-inline: auto; }
 .onboarding__body { display: flex; flex-direction: column; gap: 14px; text-align: center; }
+.onboarding h1 { font-size: 1.6rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+.onboarding h1:focus { outline: none; }
+.onboarding h1:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 8px; }
+.onboarding p { text-wrap: pretty; margin: 0; }
+.onboarding__luni { align-self: center; filter: drop-shadow(0 10px 18px color-mix(in oklab, var(--primary) 25%, transparent)); }
+.onboarding .luni-btn { align-self: center; }
+.onboarding__lead { font-size: 1.02rem; }
 .onboarding .stepper strong { font-size: 2rem; color: var(--primary); }
+.onboarding .stepper .icon-btn { min-width: 44px; min-height: 44px; }
+.onboarding .stepper .icon-btn:disabled { opacity: 0.4; }
+.onboarding .input { font-size: max(1rem, 1em); min-height: 52px; }
+/* beneficios */
+.perks { list-style: none; margin: 6px 0 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; text-align: left;
+  border-radius: 20px; background: var(--surface-2); font-size: 0.88rem; }
+.perks li { display: flex; align-items: center; gap: 10px; }
+.perks li span { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; background: var(--surface); }
+/* progreso de los pasos (guía `forms`: aria-current="step") */
+.onboarding__top { display: flex; flex-direction: column; gap: 10px; }
+.onboarding__back { align-self: flex-start; min-height: 44px; padding-inline: 4px; }
+.progress { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.75rem; color: var(--muted); }
+.progress li { display: flex; flex-direction: column; gap: 6px; }
+.progress li::before { content: ''; height: 6px; border-radius: 3px; background: var(--border); }
+.progress li.is-done::before, .progress li.is-on::before { background: var(--primary); }
+.progress li.is-on { color: var(--text); font-weight: 700; }
+.ob-field { border: 0; margin: 0; padding: 14px; border-radius: 20px; background: var(--surface); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 8px; }
+.ob-field legend { float: left; width: 100%; font-weight: 800; font-size: 1.02rem; padding: 0; margin-bottom: 4px; }
+.ob-preview { padding: 12px 14px; border-radius: 16px; background: color-mix(in oklab, var(--primary) 12%, transparent); font-size: 0.92rem; }
+.ob-preview strong { color: var(--primary); white-space: nowrap; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; }
+
+/* cambio de paso: desliza según la dirección (guía `directional-navigation-transitions`), solo si se aceptan animaciones */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(root) { animation-duration: 0.35s; animation-timing-function: ease-in-out; }
+  html:active-view-transition-type(forward)::view-transition-old(root) { animation-name: obOutLeft; }
+  html:active-view-transition-type(forward)::view-transition-new(root) { animation-name: obInRight; }
+  html:active-view-transition-type(backward)::view-transition-old(root) { animation-name: obOutRight; }
+  html:active-view-transition-type(backward)::view-transition-new(root) { animation-name: obInLeft; }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root), ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+}
+@keyframes obOutLeft { to { transform: translateX(-30%); opacity: 0; } }
+@keyframes obInRight { from { transform: translateX(30%); opacity: 0; } }
+@keyframes obOutRight { to { transform: translateX(30%); opacity: 0; } }
+@keyframes obInLeft { from { transform: translateX(-30%); opacity: 0; } }
 .hero-emoji { font-size: 3.5rem; text-align: center; }
-.dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 30px; }
-.dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--border); transition: width 0.2s; }
-.dots i.is-on { width: 24px; background: var(--primary); }
 .pin { align-items: center; text-align: center; }
 .pin__dots { display: flex; gap: 14px; margin: 20px 0 30px; }
 .pin__dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--primary); }
@@ -488,11 +537,12 @@ textarea, .input {
 .stack-sm { display: flex; flex-direction: column; gap: 6px; }
 .roles { display: grid; gap: 12px; margin-top: 8px; }
 .role {
-  display: grid; grid-template-columns: 52px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+  display: grid; grid-template-columns: 52px 1fr; column-gap: 12px; align-items: center; min-height: 84px;
   text-align: left; padding: 16px; border-radius: 20px; background: var(--surface); border: 2px solid var(--border); box-shadow: var(--shadow);
 }
 .role:hover, .role:focus-visible { border-color: var(--primary); }
-.role__emoji { grid-row: 1 / 3; font-size: 2rem; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); }
+.role__text { display: flex; flex-direction: column; gap: 2px; }
+.role__emoji { font-size: 2rem; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); }
 .role strong { font-size: 1.05rem; }
 .role small { color: var(--muted); }
 .input--code { text-align: center; font-size: 1.3rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; }
