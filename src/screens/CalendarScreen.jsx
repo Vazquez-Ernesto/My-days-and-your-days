@@ -3,16 +3,21 @@ import { MonthGrid, YearGrid, Legend } from '../components/Calendar.jsx';
 import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { useStore } from '../state/store.jsx';
-import { MONTHS, fromISO, diffDays, formatLong } from '../lib/dates.js';
+import { useSwipe } from '../lib/useSwipe.js';
+import { MONTHS, fromISO, diffDays, addDays } from '../lib/dates.js';
 import { dayStatus, cycleDayOf, pregnancyChance } from '../lib/cycle.js';
-import { MOODS, FLOWS, SEX } from '../components/DayLogSheet.jsx';
-import { CHANCE_TEXT } from './Home.jsx';
+import { MOODS, FLOWS, SEX, SYMPTOM_EMOJI } from '../components/DayLogSheet.jsx';
 
-const STATUS_TEXT = {
-  period: 'Día de período', predicted: 'Período previsto', fertile: 'Ventana fértil', ovulation: 'Ovulación prevista',
+const STATUS = {
+  period: { text: 'Día de período', cls: 'period' },
+  predicted: { text: 'Período previsto', cls: 'predicted' },
+  fertile: { text: 'Ventana fértil', cls: 'fertile' },
+  ovulation: { text: 'Ovulación prevista', cls: 'ovulation' },
 };
+const CHANCE = { baja: 'Fertilidad baja', media: 'Fertilidad media', alta: 'Fertilidad alta' };
+const WEEKDAY = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-function relative(iso, today) {
+export function relative(iso, today) {
   const d = diffDays(iso, today);
   if (d === 0) return 'Hoy';
   if (d === -1) return 'Ayer';
@@ -21,30 +26,60 @@ function relative(iso, today) {
   return `En ${d} días`;
 }
 
+/** Tramos (inicio–fin) de un estado dentro del mes, para el resumen: "8–12". */
+export function monthRanges(year, month, statusOf, wanted) {
+  const ranges = [];
+  let iso = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  while (fromISO(iso).getUTCMonth() === month) {
+    if (wanted.includes(statusOf(iso))) {
+      const last = ranges.at(-1);
+      if (last && diffDays(iso, last.end) === 1) last.end = iso;
+      else ranges.push({ start: iso, end: iso });
+    }
+    iso = addDays(iso, 1);
+  }
+  return ranges.map((r) => (r.start === r.end ? `${fromISO(r.start).getUTCDate()}` : `${fromISO(r.start).getUTCDate()}–${fromISO(r.end).getUTCDate()}`));
+}
+
+/** Navegación de meses con deslizamiento y animación según la dirección. */
+export function useMonthNav(today) {
+  const t = fromISO(today);
+  const [view, setView] = useState({ y: t.getUTCFullYear(), m: t.getUTCMonth(), dir: 0 });
+  const move = (delta) => setView(({ y, m }) => {
+    const nm = m + delta;
+    return { y: y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12, dir: delta };
+  });
+  const goToday = () => setView({ y: t.getUTCFullYear(), m: t.getUTCMonth(), dir: 0 });
+  const swipe = useSwipe({ onLeft: () => move(1), onRight: () => move(-1) });
+  return { view, setView, move, goToday, swipe };
+}
+
 export default function CalendarScreen({ onLog, onUpgrade, onSettings }) {
   const { state, today, periods, predictions, averages, togglePeriodDay, can } = useStore();
-  const t = fromISO(today);
-  const [view, setView] = useState({ y: t.getUTCFullYear(), m: t.getUTCMonth() });
+  const { view, setView, move, goToday, swipe } = useMonthNav(today);
   const [mode, setMode] = useState('month');
   const [selected, setSelected] = useState(today);
   const [editing, setEditing] = useState(false);
 
-  const move = (delta) => setView(({ y, m }) => {
-    if (mode === 'year') return { y: y + delta, m };
-    const nm = m + delta;
-    return { y: y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 };
-  });
+  const ctx = { periodDays: state.periodDays, periods, predictions, settings: state.settings };
+  const statusOf = (iso) => dayStatus(iso, ctx);
   const pickMode = (next) => {
     if (next === 'year' && !can('yearView')) return onUpgrade();
     setMode(next);
   };
   const select = (iso) => (editing ? togglePeriodDay(iso) : setSelected(iso));
+  const moveAny = (delta) => (mode === 'year' ? setView((v) => ({ ...v, y: v.y + delta, dir: delta })) : move(delta));
 
   const log = state.logs[selected];
-  const status = dayStatus(selected, { periodDays: state.periodDays, periods, predictions, settings: state.settings });
+  const status = STATUS[statusOf(selected)];
   const cycleDay = cycleDayOf(selected, periods, predictions);
   const chance = pregnancyChance(cycleDay, averages.cycleLength, averages.periodLength);
   const mood = MOODS.find((m) => m.id === log?.mood);
+  const sel = fromISO(selected);
+
+  const periodRanges = monthRanges(view.y, view.m, statusOf, ['period']);
+  const fertileRanges = monthRanges(view.y, view.m, statusOf, ['fertile', 'ovulation']);
+  const predictedRanges = monthRanges(view.y, view.m, statusOf, ['predicted']);
 
   return (
     <section className="screen">
@@ -56,20 +91,29 @@ export default function CalendarScreen({ onLog, onUpgrade, onSettings }) {
           </span>
         )}
         right={(
-          <button className="icon-btn icon-btn--text" aria-label="Ir a hoy"
-            onClick={() => { setView({ y: t.getUTCFullYear(), m: t.getUTCMonth() }); setSelected(today); }}>Hoy</button>
+          <button className="icon-btn icon-btn--text" aria-label="Ir a hoy" onClick={() => { goToday(); setSelected(today); }}>Hoy</button>
         )} />
 
-      <div className="card">
+      <div className="card cal-card" {...(mode === 'month' ? swipe : {})}>
         <div className="cal__head">
-          <button className="icon-btn" onClick={() => move(-1)} aria-label="Anterior"><Icon name="back" /></button>
-          <strong>{mode === 'year' ? view.y : `${MONTHS[view.m]} ${view.y}`}</strong>
-          <button className="icon-btn" onClick={() => move(1)} aria-label="Siguiente"><Icon name="chevron" /></button>
+          <button className="icon-btn" onClick={() => moveAny(-1)} aria-label="Anterior"><Icon name="back" /></button>
+          <strong className="cal__title">{mode === 'year' ? view.y : `${MONTHS[view.m]} ${view.y}`}</strong>
+          <button className="icon-btn" onClick={() => moveAny(1)} aria-label="Siguiente"><Icon name="chevron" /></button>
         </div>
-        {mode === 'month'
-          ? <MonthGrid year={view.y} month={view.m} selected={selected} editing={editing} onSelect={select} />
-          : <YearGrid year={view.y} onPickMonth={(m) => { setView({ y: view.y, m }); setMode('month'); }} />}
+        {mode === 'month' && (periodRanges.length > 0 || fertileRanges.length > 0 || predictedRanges.length > 0) && (
+          <div className="cal__summary">
+            {periodRanges.length > 0 && <span className="sum sum--period">Período {periodRanges.join(', ')}</span>}
+            {predictedRanges.length > 0 && <span className="sum sum--predicted">Previsto {predictedRanges.join(', ')}</span>}
+            {fertileRanges.length > 0 && <span className="sum sum--fertile">Fértil {fertileRanges.join(', ')}</span>}
+          </div>
+        )}
+        <div key={`${mode}-${view.y}-${view.m}`} className={`cal__slide cal__slide--${view.dir > 0 ? 'next' : view.dir < 0 ? 'prev' : 'none'}`}>
+          {mode === 'month'
+            ? <MonthGrid year={view.y} month={view.m} selected={selected} editing={editing} onSelect={select} />
+            : <YearGrid year={view.y} onPickMonth={(m) => { setView({ y: view.y, m, dir: 0 }); setMode('month'); }} />}
+        </div>
         <Legend />
+        {mode === 'month' && <p className="cal__hint muted small">Deslizá para cambiar de mes</p>}
       </div>
 
       {editing ? (
@@ -78,31 +122,37 @@ export default function CalendarScreen({ onLog, onUpgrade, onSettings }) {
           <button className="btn btn--primary btn--small" onClick={() => setEditing(false)}>Listo</button>
         </div>
       ) : (
-        <div className="row">
-          <button className="btn btn--soft" onClick={() => { setMode('month'); setEditing(true); }}>Editar período</button>
-          <button className="btn btn--soft" onClick={() => onLog(selected)}>{log ? 'Editar registro' : 'Registrar'}</button>
-        </div>
-      )}
-
-      {!editing && (
-        <div className="card day-detail">
-          <div className="row row--between">
-            <strong>{relative(selected, today)} · {formatLong(selected)}</strong>
-            {cycleDay && <span className="muted small">Día del ciclo: {cycleDay}</span>}
+        <div className="card day-card">
+          <div className="day-card__head">
+            <span className={`day-card__num ${status ? `day-card__num--${status.cls}` : ''}`}>{sel.getUTCDate()}</span>
+            <div className="grow">
+              <strong>{WEEKDAY[sel.getUTCDay()]}</strong>
+              <p className="muted small">{MONTHS[sel.getUTCMonth()]} · {relative(selected, today)}</p>
+            </div>
           </div>
-          <p className="muted">{STATUS_TEXT[status] ?? (chance ? CHANCE_TEXT[chance] : 'Sin datos del ciclo')}</p>
+          <div className="chips">
+            {status && <span className={`chip chip--${status.cls}`}>{status.text}</span>}
+            {cycleDay && <span className="chip">Día del ciclo: {cycleDay}</span>}
+            {!status && chance && <span className="chip">{CHANCE[chance]}</span>}
+            {!status && !cycleDay && <span className="muted small">Sin datos del ciclo</span>}
+          </div>
           {log && (
             <div className="log-summary">
-              {log.flow && <span className="chip is-on">{FLOWS.find((f) => f.id === log.flow)?.label}</span>}
+              {log.flow && <span className="chip is-on">🩸 {FLOWS.find((f) => f.id === log.flow)?.label}</span>}
               {mood && <span className="chip">{mood.emoji} {mood.label}</span>}
               {log.sex && <span className="chip">♥ {SEX.find((s) => s.id === log.sex)?.label}</span>}
-              {log.symptoms.map((s) => <span key={s} className="chip">{s}</span>)}
+              {log.symptoms.map((s) => <span key={s} className="chip">{SYMPTOM_EMOJI[s] ?? ''} {s}</span>)}
               {log.weight && <span className="chip">{log.weight} kg</span>}
               {log.temp && <span className="chip">{log.temp} °C</span>}
               {log.pill && <span className="chip">💊 Píldora</span>}
-              {log.note && <p className="note">“{log.note}”</p>}
+              {log.partnerNote && <p className="note">💌 “{log.partnerNote}”</p>}
+              {log.note && <p className="note">🔒 “{log.note}”</p>}
             </div>
           )}
+          <div className="row">
+            <button className="btn btn--soft" onClick={() => { setMode('month'); setEditing(true); }}>Editar período</button>
+            <button className="btn btn--primary" onClick={() => onLog(selected)}>{log ? 'Editar registro' : 'Registrar'}</button>
+          </div>
         </div>
       )}
     </section>

@@ -141,42 +141,71 @@ p { margin: 4px 0; }
 .disclaimer { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
 
 /* ===== Calendario ===== */
-.cal__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.cal__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
-.cal__wd { text-align: center; font-size: 0.72rem; color: var(--muted); padding: 4px 0; font-weight: 700; }
-.cal__day {
-  position: relative; min-height: 52px; border-radius: 12px; padding: 5px 4px 4px;
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
-  background: var(--surface-2); text-align: left; transition: transform 0.1s;
-}
-.cal__day:active { transform: scale(0.94); }
+.cal-card { touch-action: pan-y; user-select: none; -webkit-user-select: none; overflow: hidden; }
+.cal__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.cal__title { font-size: 1.1rem; font-weight: 800; }
+.cal__summary { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; }
+.sum { font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.sum--period { background: color-mix(in srgb, var(--period) 16%, transparent); color: var(--period); }
+.sum--predicted { border: 1.5px dashed var(--period); color: var(--period); }
+.sum--fertile { background: color-mix(in srgb, var(--fertile) 22%, transparent); color: var(--ovulation); }
+.cal__wds { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin-bottom: 4px; }
+.cal__wd { text-align: center; font-size: 0.72rem; color: var(--muted); padding: 4px 0; font-weight: 800; }
+/* columnas sin espacio entre sí: así las bandas (período, fértil) se ven continuas */
+.cal__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; row-gap: 6px; }
+.cal__day { position: relative; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: none; border-radius: 0; color: var(--text); }
 .cal__day.is-outside { background: none; }
-.cal__num { font-weight: 700; font-size: 0.95rem; line-height: 1; }
-.cal__cd { position: absolute; top: 5px; right: 5px; font-size: 0.58rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.cal__marks { display: flex; gap: 3px; align-items: center; min-height: 10px; }
-.mark { font-style: normal; font-size: 0.65rem; line-height: 1; }
+.cal__num { position: relative; z-index: 1; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%;
+  font-weight: 700; font-size: 0.95rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.cal__cd { font-size: 0.58rem; color: var(--muted); line-height: 1; min-height: 0.6rem; font-variant-numeric: tabular-nums; }
+.cal__marks { position: absolute; z-index: 2; top: 3px; left: calc(50% + 12px); display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.mark { font-style: normal; font-size: 0.6rem; line-height: 1; }
 .mark--heart { color: var(--primary); }
-.mark--dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.6; }
-.cal__day.is-period { background: var(--period); color: #fff; }
-.cal__day.is-period .cal__cd, .cal__day.is-period .mark--heart { color: #fff; }
-.cal__day.is-predicted { background: none; box-shadow: inset 0 0 0 2px var(--period); color: var(--period); }
-.cal__day.is-fertile { background: color-mix(in srgb, var(--fertile) 32%, var(--surface)); }
-.cal__day.is-ovulation { background: var(--ovulation); color: #fff; }
-.cal__day.is-ovulation .cal__cd { color: #fff; }
-.cal__day.is-today .cal__num { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
-.cal__day.is-selected { box-shadow: 0 0 0 2px var(--text); }
-.cal__day.is-predicted.is-selected { box-shadow: inset 0 0 0 2px var(--period), 0 0 0 2px var(--text); }
-.cal.is-editing .cal__day:not(.is-disabled):not(.is-period) { outline: 1.5px dashed var(--period); outline-offset: -3px; }
+.mark--dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+
+/* bandas continuas */
+.band::before { content: ''; position: absolute; inset: 4px 0; z-index: 0; }
+.band--start::before { left: 3px; border-top-left-radius: 22px; border-bottom-left-radius: 22px; }
+.band--end::before { right: 3px; border-top-right-radius: 22px; border-bottom-right-radius: 22px; }
+.band--period::before { background: var(--period); }
+.band--period { color: #fff; }
+.band--period .cal__cd, .band--period .mark--heart { color: rgba(255, 255, 255, 0.85); }
+.band--predicted::before { background: color-mix(in srgb, var(--period) 12%, transparent); border: 1.5px dashed var(--period); border-left-width: 0; border-right-width: 0; }
+.band--predicted.band--start::before { border-left-width: 1.5px; }
+.band--predicted.band--end::before { border-right-width: 1.5px; }
+.band--predicted { color: var(--period); }
+.band--fertile::before { background: color-mix(in srgb, var(--fertile) 30%, transparent); }
+.cal__day.is-ovulation .cal__num { background: var(--ovulation); color: #fff; box-shadow: 0 4px 12px color-mix(in srgb, var(--ovulation) 45%, transparent); }
+
+/* hoy y seleccionado */
+.cal__day.is-today .cal__num { background: var(--text); color: var(--bg-2); }
+.band--period.is-today .cal__num { background: #fff; color: var(--period); }
+.cal__day.is-selected .cal__num { box-shadow: 0 0 0 2.5px var(--primary); }
+.band--period.is-selected .cal__num { box-shadow: 0 0 0 2.5px #fff; }
+.cal__day.is-today.is-selected .cal__num { box-shadow: 0 0 0 2.5px var(--primary), 0 0 0 5px var(--surface); }
+.cal__day:not(.is-outside):active .cal__num { transform: scale(0.9); }
+.cal.is-editing .cal__day:not(.is-disabled):not(.is-period) .cal__num { outline: 1.5px dashed var(--period); outline-offset: 1px; }
 .cal__day.is-disabled { opacity: 0.35; }
-.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; font-size: 0.78rem; color: var(--muted); }
+
+/* animación al cambiar de mes */
+@keyframes calFromRight { from { opacity: 0; transform: translateX(28px); } }
+@keyframes calFromLeft { from { opacity: 0; transform: translateX(-28px); } }
+.cal__slide--next { animation: calFromRight 0.25s ease-out; }
+.cal__slide--prev { animation: calFromLeft 0.25s ease-out; }
+.cal__hint { text-align: center; margin-top: 6px; font-size: 0.72rem; }
+
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 12px; font-size: 0.75rem; color: var(--muted); }
 .legend span { display: flex; align-items: center; gap: 5px; }
-.lg { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.lg { width: 14px; height: 10px; border-radius: 6px; display: inline-block; }
 .lg--period { background: var(--period); }
-.lg--predicted { box-shadow: inset 0 0 0 2px var(--period); }
-.lg--fertile { background: var(--fertile); }
-.lg--ovulation { background: var(--ovulation); }
+.lg--predicted { border: 1.5px dashed var(--period); }
+.lg--fertile { background: color-mix(in srgb, var(--fertile) 45%, transparent); }
+.lg--ovulation { background: var(--ovulation); width: 10px; border-radius: 50%; }
+
 .year { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .year__month { display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 12px; background: var(--surface-2); text-align: left; }
+.year__month.is-current { box-shadow: 0 0 0 2px var(--primary); }
 .year__month strong { font-size: 0.8rem; text-transform: capitalize; }
 .year__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .year__grid i { aspect-ratio: 1; border-radius: 2px; }
@@ -188,9 +217,24 @@ p { margin: 4px 0; }
 .y.is-today { outline: 1.5px solid var(--text); }
 .edit-hint { display: flex; align-items: center; gap: 12px; border: 2px dashed var(--period); }
 .edit-hint p { flex: 1; margin: 0; }
+
+/* tarjeta del día */
+.day-card { display: flex; flex-direction: column; gap: 12px; }
+.day-card__head { display: flex; align-items: center; gap: 14px; }
+.day-card__num { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; font-size: 1.6rem; font-weight: 800;
+  background: var(--surface-2); flex: none; font-variant-numeric: tabular-nums; }
+.day-card__num--period { background: var(--period); color: #fff; }
+.day-card__num--predicted { border: 2px dashed var(--period); color: var(--period); background: none; }
+.day-card__num--fertile { background: color-mix(in srgb, var(--fertile) 35%, var(--surface)); }
+.day-card__num--ovulation { background: var(--ovulation); color: #fff; }
+.day-card__head p { margin: 0; text-transform: none; }
+.chip--period { background: color-mix(in srgb, var(--period) 16%, transparent); color: var(--period); border-color: transparent; font-weight: 700; }
+.chip--predicted { border: 1.5px dashed var(--period); color: var(--period); font-weight: 700; }
+.chip--fertile, .chip--ovulation { background: color-mix(in srgb, var(--fertile) 22%, transparent); color: var(--ovulation); border-color: transparent; font-weight: 700; }
+[data-theme='light'] .chip--fertile, [data-theme='light'] .chip--ovulation { color: #7a4fc0; }
 .day-detail { display: flex; flex-direction: column; gap: 6px; }
-.log-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.note { width: 100%; font-style: italic; color: var(--muted); }
+.log-summary { display: flex; flex-wrap: wrap; gap: 6px; }
+.note { width: 100%; font-style: italic; color: var(--muted); margin: 2px 0; }
 
 /* ===== Chips / ánimo ===== */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }

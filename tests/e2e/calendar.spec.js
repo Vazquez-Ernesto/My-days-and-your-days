@@ -66,3 +66,29 @@ test('borrar todo pide confirmación dentro de la app', async ({ page }) => {
   await page.getByRole('button', { name: 'Sí, borrar todo' }).click();
   await expect(page.getByRole('heading', { name: 'Te damos la bienvenida a My Days' })).toBeVisible();
 });
+
+test('deslizar el dedo cambia de mes (y no selecciona un día sin querer)', async ({ page }) => {
+  const app = new App(page);
+  await app.goto();
+  await app.openTab('Calendario');
+  const title = page.locator('.cal__title');
+  await expect(title).toHaveText('Noviembre 2026');
+  const box = await page.locator('.cal-card .cal__grid').boundingBox();
+  const y = box.y + box.height / 2;
+  const drag = async (fromX, toX) => {
+    await page.mouse.move(fromX, y);
+    await page.mouse.down();
+    await page.mouse.move((fromX + toX) / 2, y, { steps: 4 });
+    await page.mouse.move(toX, y, { steps: 4 });
+    await page.mouse.up();
+  };
+  await drag(box.x + box.width - 20, box.x + 20); // hacia la izquierda → mes siguiente
+  await expect(title).toHaveText('Diciembre 2026');
+  await expect(page.locator('.day-card')).toContainText('Viernes'); // sigue seleccionado hoy (20/11), no el día donde soltó
+  await drag(box.x + 20, box.x + box.width - 20); // hacia la derecha → vuelve
+  await drag(box.x + 20, box.x + box.width - 20);
+  await expect(title).toHaveText('Octubre 2026');
+  await page.getByRole('button', { name: 'Ir a hoy' }).click();
+  await expect(title).toHaveText('Noviembre 2026');
+  await expect(page.getByRole('button', { name: '2026-11-20' })).toHaveAttribute('aria-current', 'date');
+});
