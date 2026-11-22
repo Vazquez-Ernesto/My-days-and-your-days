@@ -1,11 +1,11 @@
 name: Mantener despierto el servidor
 
 # El plan gratis de Render duerme el servidor tras 15 min sin tráfico, y dormido no puede
-# mandar los recordatorios programados. Cada 10 minutos le "tocamos la puerta".
-# (GitHub puede demorar las tareas programadas algunos minutos; para recordatorios alcanza.)
+# mandar los recordatorios programados. Cada 5 minutos (el mínimo de GitHub) le "tocamos la puerta":
+# GitHub suele demorar estas tareas (se vieron huecos de 16 min con */10), así que con */5 queda margen.
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:

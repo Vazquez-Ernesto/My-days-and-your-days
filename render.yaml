@@ -10,6 +10,10 @@ services:
     region: ohio            # misma zona que la base de Neon (us-east-2)
     branch: main
     autoDeploy: true
+    # Solo redesplegar cuando cambia el servidor: un cambio visual de la app no debe reiniciarlo
+    buildFilter:
+      paths:
+        - server/**
     healthCheckPath: /actuator/health
     envVars:
       - key: DATABASE_URL   # la URL DIRECTA de Neon (sin -pooler)
