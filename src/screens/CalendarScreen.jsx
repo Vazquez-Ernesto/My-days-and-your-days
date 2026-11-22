@@ -6,7 +6,7 @@ import { useStore } from '../state/store.jsx';
 import { useSwipe } from '../lib/useSwipe.js';
 import { MONTHS, fromISO, diffDays, addDays } from '../lib/dates.js';
 import { dayStatus, cycleDayOf, pregnancyChance } from '../lib/cycle.js';
-import { MOODS, FLOWS, SEX, SYMPTOM_EMOJI } from '../components/DayLogSheet.jsx';
+import { dayMarkers } from '../lib/dayMarkers.js';
 
 const STATUS = {
   period: { text: 'Día de período', cls: 'period' },
@@ -74,7 +74,6 @@ export default function CalendarScreen({ onLog, onUpgrade, onSettings }) {
   const status = STATUS[statusOf(selected)];
   const cycleDay = cycleDayOf(selected, periods, predictions);
   const chance = pregnancyChance(cycleDay, averages.cycleLength, averages.periodLength);
-  const mood = MOODS.find((m) => m.id === log?.mood);
   const sel = fromISO(selected);
 
   const periodRanges = monthRanges(view.y, view.m, statusOf, ['period']);
@@ -137,17 +136,13 @@ export default function CalendarScreen({ onLog, onUpgrade, onSettings }) {
             {!status && !cycleDay && <span className="muted small">Sin datos del ciclo</span>}
           </div>
           {log && (
-            <div className="log-summary">
-              {log.flow && <span className="chip is-on">🩸 {FLOWS.find((f) => f.id === log.flow)?.label}</span>}
-              {mood && <span className="chip">{mood.emoji} {mood.label}</span>}
-              {log.sex && <span className="chip">♥ {SEX.find((s) => s.id === log.sex)?.label}</span>}
-              {log.symptoms.map((s) => <span key={s} className="chip">{SYMPTOM_EMOJI[s] ?? ''} {s}</span>)}
-              {log.weight && <span className="chip">{log.weight} kg</span>}
-              {log.temp && <span className="chip">{log.temp} °C</span>}
-              {log.pill && <span className="chip">💊 Píldora</span>}
-              {log.partnerNote && <p className="note">💌 “{log.partnerNote}”</p>}
-              {log.note && <p className="note">🔒 “{log.note}”</p>}
-            </div>
+            <ul className="log-summary" aria-label="Registro del día">
+              {dayMarkers(log).filter((m) => m.key !== 'note' && m.key !== 'partnerNote').map((m) => (
+                <li key={m.key} className={`chip chip--log chip--${m.key}`}><span aria-hidden="true">{m.emoji}</span> {m.label}</li>
+              ))}
+              {log.partnerNote && <li className="note">💌 “{log.partnerNote}”</li>}
+              {log.note && <li className="note">📝 “{log.note}”</li>}
+            </ul>
           )}
           <div className="row">
             <button className="btn btn--soft" onClick={() => { setMode('month'); setEditing(true); }}>Editar período</button>

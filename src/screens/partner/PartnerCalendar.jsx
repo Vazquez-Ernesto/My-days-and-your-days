@@ -27,7 +27,7 @@ export default function PartnerCalendar({ onSettings }) {
       </section>
     );
   }
-  const data = { ...view, logs: Object.fromEntries(Object.entries(snap.days ?? {}).map(([d, v]) => [d, { ...v, note: v.partnerNote }])) };
+  const data = { ...view, logs: snap.days ?? {} };
   let status = dayStatus(selected, view);
   if (hideFertile && (status === 'fertile' || status === 'ovulation')) status = null;
   const cycleDay = cycleDayOf(selected, view.periods, view.predictions);
@@ -42,9 +42,9 @@ export default function PartnerCalendar({ onSettings }) {
           <button className="icon-btn" onClick={() => move(1)} aria-label="Siguiente"><Icon name="chevron" /></button>
         </div>
         <div key={`${ym.y}-${ym.m}`} className={`cal__slide cal__slide--${ym.dir > 0 ? 'next' : ym.dir < 0 ? 'prev' : 'none'}`}>
-          <MonthGrid year={ym.y} month={ym.m} selected={selected} onSelect={setSelected} data={data} hideFertile={hideFertile} />
+          <MonthGrid year={ym.y} month={ym.m} selected={selected} onSelect={setSelected} data={data} hideFertile={hideFertile} viewer="partner" />
         </div>
-        <Legend hideFertile={hideFertile} />
+        <Legend hideFertile={hideFertile} viewer="partner" />
       </div>
       <div className="card day-detail">
         <div className="row row--between">
