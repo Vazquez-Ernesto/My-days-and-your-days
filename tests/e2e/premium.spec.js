@@ -10,7 +10,9 @@ test('plan gratis: anuncio visible y funciones Premium bloqueadas', async ({ pag
   await expect(page.getByText('Anuncio', { exact: true })).toBeVisible();
   await app.openTab('Yo');
   await expect(page.getByText('Patrones de síntomas por ciclo')).toBeVisible();
-  await expect(page.getByText('Disponible en Premium')).toHaveCount(2);
+  await expect(page.getByText('Disponible en Premium')).toHaveCount(1);
+  await page.getByRole('button', { name: /Estadísticas/ }).click();
+  await expect(page.getByText('Gráficos de tu ciclo')).toBeVisible(); // los gráficos piden Premium
   await expect(page.getByText('Largo de tus ciclos', { exact: true })).toHaveCount(0);
 });
 
@@ -34,8 +36,9 @@ test('mejorar a Premium desbloquea gráficos, vista anual y quita anuncios', asy
 
   await expect(page.getByText('Anuncio', { exact: true })).toHaveCount(0);
   await app.openTab('Yo');
-  await expect(page.getByText('Largo de tus ciclos')).toBeVisible();
   await expect(page.getByText('Patrón por ciclo')).toBeVisible();
+  await page.getByRole('button', { name: /Estadísticas/ }).click();
+  await expect(page.getByRole('heading', { name: 'Largo de tus ciclos' })).toBeVisible();
   await app.openTab('Calendario');
   await page.getByRole('tab', { name: 'Año' }).click();
   await expect(page.getByRole('button', { name: 'Noviembre 2026' })).toBeVisible();
