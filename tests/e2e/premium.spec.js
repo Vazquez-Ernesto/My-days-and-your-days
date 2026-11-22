@@ -28,7 +28,8 @@ test('mejorar a Premium desbloquea gráficos, vista anual y quita anuncios', asy
   const app = new App(page);
   await app.goto();
   await page.getByText('Probá Premium').click();
-  await expect(page.getByText('$19.99 / año').first()).toBeVisible();
+  await expect(page.getByText('USD 19,99').first()).toBeVisible();
+  await expect(page.getByText('Demo: los pagos todavía no están habilitados')).toBeVisible(); // el servidor de test no tiene Mercado Pago
   await page.getByRole('button', { name: 'Probar 7 días gratis' }).click();
 
   await expect(page.getByText('Anuncio', { exact: true })).toHaveCount(0);

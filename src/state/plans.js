@@ -19,8 +19,9 @@ export const PLANS = {
   premium: {
     id: 'premium',
     name: 'Premium',
-    monthly: { price: 2.99, label: '$2.99 / mes' },
-    yearly: { price: 19.99, label: '$19.99 / año', badge: 'Ahorrás 44%' },
+    // precios de referencia; los reales (en pesos) los define el servidor
+    monthly: { price: 2.99, label: 'USD 2,99 / mes' },
+    yearly: { price: 19.99, label: 'USD 19,99 / año', badge: 'Ahorrás 44%' },
     trialDays: 7,
     features: [
       'Sin anuncios',
@@ -33,6 +34,20 @@ export const PLANS = {
     ],
   },
 };
+
+/** Comparación Gratis vs Premium: [función, gratis, premium] (true/false o un texto). */
+export const COMPARE = [
+  ['Calendario, predicción y ventana fértil', true, true],
+  ['Registro diario y recordatorios', true, true],
+  ['Modo pareja y cuestionario', true, true],
+  ['Predicciones hacia adelante', '3 meses', '12 meses'],
+  ['Sin anuncios', false, true],
+  ['Patrones de síntomas por ciclo', false, true],
+  ['Gráfico del largo de tus ciclos', false, true],
+  ['Vista anual del calendario', false, true],
+  ['Exportar datos para tu médica/o', false, true],
+  ['Bloqueo con PIN', false, true],
+];
 
 export const FEATURES = {
   noAds: 'premium',

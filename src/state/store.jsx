@@ -24,7 +24,8 @@ const initialState = {
   periodDays: [], // ['2026-11-01', ...]
   logs: {}, // { '2026-11-01': { ...EMPTY_LOG } }
   settings: { cycleLength: 28, periodLength: 5, theme: 'system', pin: null, reminders: DEFAULT_REMINDERS },
-  plan: 'free', // 'free' | 'premium'  (en producción esto lo valida el servidor)
+  plan: 'free', // 'free' | 'premium'. Con pagos habilitados lo decide el servidor (que le pregunta a Mercado Pago)
+  billing: null, // { status, period, nextPaymentAt, amountArs } de la suscripción, o null
   notified: [], // ids de recordatorios ya enviados como notificación
   // Lo que ELLA comparte con su pareja
   sharing: { name: '', shares: DEFAULT_SHARES, moments: [], desire: null, inviteCode: null, inbox: [], seenReplyAt: null },

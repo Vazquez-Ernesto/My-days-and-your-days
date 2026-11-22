@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useStore } from '../state/store.jsx';
 import { Stepper } from './Onboarding.jsx';
+import { billingSummary } from '../lib/billing.js';
+import { formatLong, todayISO } from '../lib/dates.js';
 import { PremiumGate, PremiumBadge } from '../components/Premium.jsx';
 import Header from '../components/Header.jsx';
 import PartnerShareCard from '../components/PartnerShareCard.jsx';
@@ -47,7 +49,7 @@ function exportCSV(state) {
 }
 
 export default function Settings({ onUpgrade, onBack, onInvite, onPreview }) {
-  const { state, updateSettings, update, reset } = useStore();
+  const { state, updateSettings, reset } = useStore();
   const { settings } = state;
   const [pinDraft, setPinDraft] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
@@ -60,10 +62,11 @@ export default function Settings({ onUpgrade, onBack, onInvite, onPreview }) {
         <div>
           <p className="muted small">Tu plan</p>
           <strong>{PLANS[state.plan].name}</strong> {state.plan === 'premium' && <PremiumBadge />}
+          {state.billing && <p className="muted small">{billingSummary(state.billing, (i) => formatLong(todayISO(new Date(i))))}</p>}
         </div>
         {state.plan === 'free'
           ? <button className="btn btn--primary btn--small" onClick={onUpgrade}>Mejorar</button>
-          : <button className="btn btn--outline btn--small" onClick={() => update({ plan: 'free' })}>Volver a Gratis (demo)</button>}
+          : <button className="btn btn--outline btn--small" onClick={onUpgrade}>Administrar</button>}
       </div>
 
       <ProfileCard />

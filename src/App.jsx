@@ -16,6 +16,8 @@ import PartnerReminders from './screens/partner/PartnerReminders.jsx';
 import PartnerSettings from './screens/partner/PartnerSettings.jsx';
 import { buildSnapshot } from './lib/partner.js';
 import { useCloudSync } from './lib/useCloudSync.js';
+import { useBilling } from './lib/useBilling.js';
+import { isReturnFromCheckout } from './lib/billing.js';
 import Quiz from './screens/Quiz.jsx';
 import Icon from './components/Icons.jsx';
 import { permission, showNotification } from './lib/notifications.js';
@@ -71,7 +73,8 @@ export default function App() {
   const { state, can, today } = useStore();
   const [tab, setTab] = useState('home');
   const [logDate, setLogDate] = useState(null);
-  const [showPlans, setShowPlans] = useState(false);
+  // si volvemos de pagar en Mercado Pago, abrimos directo la pantalla del plan
+  const [showPlans, setShowPlans] = useState(() => isReturnFromCheckout());
   const [showSettings, setShowSettings] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -80,6 +83,7 @@ export default function App() {
   useTheme(state.settings.theme);
   useReminderNotifications();
   const { syncNow, error: syncError } = useCloudSync();
+  const billing = useBilling(state.onboarded && state.role !== 'partner');
 
   if (!state.onboarded) return <div className="app"><Onboarding /></div>;
   if (state.settings.pin && can('pinLock') && !unlocked) {
@@ -129,7 +133,7 @@ export default function App() {
         ))}
       </nav>
       {logDate && <DayLogSheet key={logDate} date={logDate} onClose={() => setLogDate(null)} />}
-      {showPlans && <Plans onClose={() => setShowPlans(false)} />}
+      {showPlans && <Plans onClose={() => setShowPlans(false)} returning={billing.returning} onRefresh={billing.refresh} />}
       {showInvite && <InviteSheet onClose={() => setShowInvite(false)} />}
     </div>
   );
