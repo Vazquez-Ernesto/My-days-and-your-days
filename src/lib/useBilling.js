@@ -33,9 +33,9 @@ export function useBilling(enabled) {
 
   useEffect(() => {
     if (!enabled) return undefined;
-    refresh();
+    void refresh();
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && Date.now() - last.current > REFRESH_MS) refresh();
+      if (document.visibilityState === 'visible' && Date.now() - last.current > REFRESH_MS) void refresh();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);

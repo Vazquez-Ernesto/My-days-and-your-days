@@ -58,7 +58,7 @@ public class BillingController {
                                         @RequestParam(name = "data.id", required = false) String dataId,
                                         @RequestParam(name = "id", required = false) String id,
                                         @RequestBody(required = false) Map<String, Object> body) {
-        String kind = first(type, topic, body == null ? null : (String) body.get("type"));
+        String kind = first(type, topic, body != null && body.get("type") != null ? body.get("type").toString() : null);
         String preapprovalId = first(dataId, id, body != null && body.get("data") instanceof Map<?, ?> d && d.get("id") != null ? d.get("id").toString() : null);
         if (kind != null && kind.contains("preapproval")) billing.onNotification(preapprovalId);
         return Map.of("received", true);

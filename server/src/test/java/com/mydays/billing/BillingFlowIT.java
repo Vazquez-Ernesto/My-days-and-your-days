@@ -12,6 +12,7 @@ import com.mydays.support.MutableClock;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +23,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /** Suscripción a Premium de punta a punta, con un Mercado Pago falso (no se cobra nada). */
-@SpringBootTest(properties = {"app.billing.access-token=TEST-token", "app.billing.usd-rate=1500", "app.push.scheduler-enabled=false"})
+@SpringBootTest(properties = {"app.billing.usd-rate=1500", "app.push.scheduler-enabled=false"})
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BillingFlowIT {
@@ -38,6 +41,12 @@ class BillingFlowIT {
 
         @Bean @Primary
         FakeMercadoPago fakeMercadoPago() { return new FakeMercadoPago(); }
+    }
+
+    /** Un token cualquiera (no es una credencial real): solo para que los pagos figuren como habilitados. */
+    @DynamicPropertySource
+    static void billing(DynamicPropertyRegistry registry) {
+        registry.add("app.billing.access-token", () -> UUID.randomUUID().toString());
     }
 
     @Autowired MockMvc mvc;

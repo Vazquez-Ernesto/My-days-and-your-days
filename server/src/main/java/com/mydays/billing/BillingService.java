@@ -116,7 +116,7 @@ public class BillingService {
             parseUuid(p.externalReference()).flatMap(subs::findById).ifPresent(sub -> sub.apply(p, now));
         } catch (ApiException e) {
             // id desconocido o Mercado Pago caído: lo ignoramos (si era real, Mercado Pago reintenta)
-            log.info("Aviso de Mercado Pago ignorado ({}): {}", preapprovalId, e.getCode());
+            log.info("Aviso de Mercado Pago ignorado: {}", e.getCode()); // el id viene de afuera: no lo escribimos en el log
         }
     }
 

@@ -90,7 +90,7 @@ function Offer({ prices, onDemo }) {
   );
 
   return (
-    <form className="offer" onSubmit={submit} aria-labelledby="plans-title">
+    <form className="offer" onSubmit={(e) => { void submit(e); }} aria-labelledby="plans-title">
       <fieldset className="periods">
         <legend>Elegí cómo pagar</legend>
         {option('YEARLY', 'Anual', prices.yearly)}
@@ -156,7 +156,7 @@ function Manage({ onClose }) {
           <p id="cancel-help">No se te va a cobrar más. Seguís con Premium hasta {state.billing.nextPaymentAt ? `el ${dateOf(state.billing.nextPaymentAt)}` : 'el final del período'}.</p>
           <div className="row">
             <button type="button" className="btn btn--soft" onClick={() => setConfirming(false)} autoFocus>Mantener Premium</button>
-            <button type="button" className="btn btn--danger" onClick={cancel} disabled={busy} aria-describedby="cancel-help">
+            <button type="button" className="btn btn--danger" onClick={() => { void cancel(); }} disabled={busy} aria-describedby="cancel-help">
               {busy ? 'Cancelando…' : 'Sí, cancelar'}
             </button>
           </div>
@@ -220,7 +220,7 @@ export default function Plans({ onClose, returning = false, onRefresh }) {
         ? <Manage onClose={() => dialog.current?.close()} />
         : <>
             {state.billing?.status === 'pending' && (
-              <button type="button" className="btn btn--soft btn--block" onClick={recheck} disabled={checking}>
+              <button type="button" className="btn btn--soft btn--block" onClick={() => { void recheck(); }} disabled={checking}>
                 {checking ? 'Revisando…' : 'Ya pagué, revisar de nuevo'}
               </button>
             )}
