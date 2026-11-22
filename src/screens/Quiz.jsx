@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../state/store.jsx';
 import Header from '../components/Header.jsx';
 import Avatar from '../components/Avatar.jsx';
+import Mascot from '../components/Mascot.jsx';
 import { questionsFor, compare, syncLabel, quizStatus, QUESTIONS_PER_DAY } from '../lib/quiz.js';
 import { formatShort } from '../lib/dates.js';
 
@@ -69,7 +70,7 @@ export default function Quiz({ onBack }) {
 
       {status === 'todo' && (
         <div className="card stack center">
-          <div className="hero-emoji">💬</div>
+          <Mascot mood="love" size={110} className="center-block" />
           <h2>5 preguntas para conocerse más</h2>
           <p className="muted">No vas a ver lo que respondió {theirName} hasta que respondas vos. ¡Sin trampa!</p>
           <button className="btn btn--primary btn--block" onClick={() => setStep(0)}>Empezar</button>
@@ -86,14 +87,16 @@ export default function Quiz({ onBack }) {
       )}
 
       {status === 'waiting' && (
-        <p className="notice center" role="status">
-          ¡Listo! Cuando {theirName} responda, te avisamos y van a ver los resultados juntos 💞
-        </p>
+        <div className="card center stack" role="status">
+          <Mascot mood="wait" size={90} className="center-block" />
+          <p>¡Listo! Cuando {theirName} responda, te avisamos y van a ver los resultados juntos 💞</p>
+        </div>
       )}
 
       {result && (
         <>
           <div className="card stack center" role="status">
+            <Mascot mood={result.matches >= 3 ? 'party' : 'calm'} size={80} className="center-block" />
             <Meter percent={result.percent} />
             <h2>{label.emoji} {label.title}</h2>
             <p className="muted">{label.text}</p>

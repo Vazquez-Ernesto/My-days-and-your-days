@@ -7,6 +7,7 @@ import Icon from '../../components/Icons.jsx';
 import QuizCard from '../../components/QuizCard.jsx';
 import SharedDay from '../../components/SharedDay.jsx';
 import { CoupleAvatars } from '../../components/Avatar.jsx';
+import Mascot, { PHASE_MOOD } from '../../components/Mascot.jsx';
 import { PHASES, pregnancyChance, nextFertileWindow } from '../../lib/cycle.js';
 import { snapshotView, latestMoment, partnerTips, timeAgo, visiblePhase, REPLIES } from '../../lib/partner.js';
 import { formatShort, diffDays } from '../../lib/dates.js';
@@ -52,7 +53,7 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
       <section className="screen">
         <Header title="My Days" onSettings={onSettings} />
         <div className="card center stack">
-          <div className="hero-emoji">💔</div>
+          <Mascot mood="sad" size={110} className="center-block" />
           <h2>Ya no estás vinculado</h2>
           <p className="muted">Tu pareja terminó el vínculo, así que ya no podés ver su ciclo.</p>
           <button className="btn btn--primary" onClick={unlinkPartner}>Volver al inicio</button>
@@ -89,6 +90,7 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
 
       {snapshot.waiting && (
         <div className="card center stack" role="status">
+          <Mascot mood="wait" size={90} className="center-block" />
           <p><strong>¡Listo, ya están vinculados! 💞</strong></p>
           <p className="muted small">Esperando que tu pareja abra My Days para compartir sus datos. Se actualiza solo.</p>
         </div>
@@ -187,7 +189,10 @@ export default function PartnerHome({ snapshot, preview = false, onSettings, onC
 
       {tips.length > 0 && (
         <div className="card stack tips">
-          <h2 className="card__title">Cómo acompañarla hoy</h2>
+          <div className="row">
+            <Mascot mood={phase ? PHASE_MOOD[phase] : 'love'} size={52} />
+            <h2 className="card__title">Cómo acompañarla hoy</h2>
+          </div>
           <ul>{tips.map((t) => <li key={t}>{t}</li>)}</ul>
         </div>
       )}

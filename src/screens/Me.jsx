@@ -3,6 +3,7 @@ import { useStore } from '../state/store.jsx';
 import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { PremiumGate } from '../components/Premium.jsx';
+import Mascot from '../components/Mascot.jsx';
 import { SYMPTOM_EMOJI, MOODS, FLOWS, SEX } from '../components/DayLogSheet.jsx';
 import { cycleLengths, cycleDayOf, phaseOfDay, symptomCounts, symptomPattern } from '../lib/cycle.js';
 import { addDays, formatShort, formatLong, diffDays } from '../lib/dates.js';
@@ -116,7 +117,9 @@ export default function Me({ onUpgrade, onSettings, onLog }) {
             <button key={p.id} className={`chip ${phase === p.id ? 'is-on' : ''}`} onClick={() => setPhase(p.id)}>{p.label}</button>
           ))}
         </div>
-        {counts.total === 0 ? <p className="muted">No hay síntomas registrados en este período.</p> : (
+        {counts.total === 0 ? (
+          <div className="empty"><Mascot mood="sleepy" size={72} /><p className="muted">No hay síntomas registrados en este período. ¡Mejor así!</p></div>
+        ) : (
           <>
             <p><strong className="big-n">{counts.total}</strong> veces</p>
             <p className="muted small">Síntoma más registrado: <strong>{counts.top[0][0]}</strong>.</p>
@@ -190,7 +193,9 @@ export default function Me({ onUpgrade, onSettings, onLog }) {
 
       <div className="card">
         <h2 className="card__title">Cronología</h2>
-        {entries.length === 0 ? <p className="muted">Todos tus registros van a aparecer acá.</p> : (
+        {entries.length === 0 ? (
+          <div className="empty"><Mascot mood="happy" size={72} /><p className="muted">Todos tus registros van a aparecer acá. Tocá “Registrar” para empezar.</p></div>
+        ) : (
           <ul className="timeline-list">
             {entries.slice(-15).reverse().map(([d, l]) => (
               <li key={d}>
