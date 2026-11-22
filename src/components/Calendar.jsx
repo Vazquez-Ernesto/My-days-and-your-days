@@ -1,6 +1,9 @@
 import { monthMatrix, MONTHS, WEEKDAYS, fromISO } from '../lib/dates.js';
 import { dayStatus, cycleDayOf } from '../lib/cycle.js';
 import { useStore } from '../state/store.jsx';
+import { dayMarkers, cellMarkers, MARKER_LEGEND } from '../lib/dayMarkers.js';
+
+const STATUS_TEXT = { period: 'Período', predicted: 'Período previsto', fertile: 'Ventana fértil', ovulation: 'Ovulación prevista' };
 
 /**
  * Info de cada día. Por defecto usa los datos propios; `data` permite mostrar los de otra persona
@@ -22,7 +25,7 @@ function useDayInfo(data, hideFertile = false) {
 // Agrupa estados en "bandas": el período real, el previsto y la ventana fértil (incluye la ovulación)
 const BAND = { period: 'period', predicted: 'predicted', fertile: 'fertile', ovulation: 'fertile' };
 
-export function MonthGrid({ year, month, selected, editing, onSelect, data, hideFertile }) {
+export function MonthGrid({ year, month, selected, editing, onSelect, data, hideFertile, viewer = 'self' }) {
   const { today } = useStore();
   const info = useDayInfo(data, hideFertile);
   const weeks = monthMatrix(year, month);
@@ -41,16 +44,26 @@ export function MonthGrid({ year, month, selected, editing, onSelect, data, hide
             const cls = ['cal__day', d.status && `is-${d.status}`, band && `band band--${band}`,
               band && prevBand !== band && 'band--start', band && nextBand !== band && 'band--end',
               iso === today && 'is-today', iso === selected && 'is-selected', editing && iso > today && 'is-disabled'].filter(Boolean).join(' ');
+            const date = fromISO(iso);
+            const markers = dayMarkers(d.log, viewer);
+            const { shown, more } = cellMarkers(markers);
+            // guía `accessibility`: el nombre incluye el texto visible ("21"); lo demás va como descripción
+            const description = [STATUS_TEXT[d.status], d.cycleDay && `día ${d.cycleDay} del ciclo`, ...markers.map((m) => m.label)]
+              .filter(Boolean).join('. ');
             return (
-              <button key={iso} className={cls} onClick={() => onSelect(iso)} aria-label={iso}
+              <button key={iso} className={cls} onClick={() => onSelect(iso)} data-date={iso}
+                aria-label={`${date.getUTCDate()} de ${MONTHS[date.getUTCMonth()].toLowerCase()}`}
+                aria-description={description || undefined}
                 disabled={editing && iso > today} aria-pressed={editing ? d.status === 'period' : undefined}
                 aria-current={iso === today ? 'date' : undefined}>
-                <span className="cal__num">{fromISO(iso).getUTCDate()}</span>
+                <span className="cal__num">{date.getUTCDate()}</span>
                 <span className="cal__cd">{d.cycleDay ?? ''}</span>
-                <span className="cal__marks">
-                  {d.log?.sex && <i className="mark mark--heart">♥</i>}
-                  {d.log && (d.log.symptoms?.length || d.log.mood || d.log.note || d.log.partnerNote) ? <i className="mark mark--dot" /> : null}
-                </span>
+                {shown.length > 0 && (
+                  <span className="cal__marks" aria-hidden="true">
+                    {shown.map((m) => <i key={m.key} className={`mark mark--${m.key}`}>{m.emoji}</i>)}
+                    {more > 0 && <i className="mark mark--more">+{more}</i>}
+                  </span>
+                )}
               </button>
             );
           });
@@ -83,13 +96,29 @@ export function YearGrid({ year, onPickMonth }) {
   );
 }
 
-export function Legend({ hideFertile = false }) {
+/** Colores siempre a la vista + "¿Qué significa cada ícono?" en un <details> nativo (guía `search-hidden-content`). */
+export function Legend({ hideFertile = false, viewer = 'self' }) {
+  const icons = MARKER_LEGEND.filter((l) => viewer === 'self' || !l.private)
+    .map((l) => (viewer === 'partner' && l.key === 'partnerNote' ? { ...l, text: 'Nota que te dejó' } : l));
   return (
-    <div className="legend">
-      <span><i className="lg lg--period" />Período</span>
-      <span><i className="lg lg--predicted" />Previsto</span>
-      {!hideFertile && <span><i className="lg lg--fertile" />Fértil</span>}
-      {!hideFertile && <span><i className="lg lg--ovulation" />Ovulación</span>}
+    <div className="legend-wrap">
+      <ul className="legend" aria-label="Colores del calendario">
+        <li><i className="lg lg--period" aria-hidden="true" />Período</li>
+        <li><i className="lg lg--predicted" aria-hidden="true" />Previsto</li>
+        {!hideFertile && <li><i className="lg lg--fertile" aria-hidden="true" />Fértil</li>}
+        {!hideFertile && <li><i className="lg lg--ovulation" aria-hidden="true" />Ovulación</li>}
+        <li><i className="lg lg--today" aria-hidden="true" />Hoy</li>
+      </ul>
+      <details className="legend-more">
+        <summary>¿Qué significa cada ícono?</summary>
+        <ul className="legend-icons">
+          {icons.map((l) => (
+            <li key={l.key}><span className="legend-icons__emoji" aria-hidden="true">{l.emoji}</span>{l.text}</li>
+          ))}
+          <li><span className="legend-icons__emoji legend-icons__more" aria-hidden="true">+2</span>Hay más registros ese día (tocalo para verlos)</li>
+          <li><span className="legend-icons__emoji legend-icons__num" aria-hidden="true">14</span>El número chiquito es el día de tu ciclo</li>
+        </ul>
+      </details>
     </div>
   );
 }

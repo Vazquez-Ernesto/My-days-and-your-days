@@ -7,9 +7,9 @@ test('cada día muestra su número de día del ciclo', async ({ page }) => {
   const app = new App(page);
   await app.goto();
   await app.openTab('Calendario');
-  await expect(page.getByRole('button', { name: '2026-11-03' }).locator('.cal__cd')).toHaveText('1');
-  await expect(page.getByRole('button', { name: '2026-11-20' }).locator('.cal__cd')).toHaveText('18');
-  await page.getByRole('button', { name: '2026-11-17' }).click();
+  await expect(page.locator('[data-date="2026-11-03"]').locator('.cal__cd')).toHaveText('1');
+  await expect(page.locator('[data-date="2026-11-20"]').locator('.cal__cd')).toHaveText('18');
+  await page.locator('[data-date="2026-11-17"]').click();
   await expect(page.getByText('Día del ciclo: 15')).toBeVisible();
   await expect(page.getByText('Ovulación prevista')).toBeVisible();
 });
@@ -19,9 +19,9 @@ test('editar período: marcar y desmarcar días tocándolos', async ({ page }) =
   await app.goto();
   await app.openTab('Calendario');
   await page.getByRole('button', { name: 'Editar período' }).click();
-  await page.getByRole('button', { name: '2026-11-08' }).click(); // agregar un día
-  await page.getByRole('button', { name: '2026-11-03' }).click(); // quitar un día
-  await expect(page.getByRole('button', { name: '2026-11-21' })).toBeDisabled(); // no se puede marcar el futuro
+  await page.locator('[data-date="2026-11-08"]').click(); // agregar un día
+  await page.locator('[data-date="2026-11-03"]').click(); // quitar un día
+  await expect(page.locator('[data-date="2026-11-21"]')).toBeDisabled(); // no se puede marcar el futuro
   await page.getByRole('button', { name: 'Listo' }).click();
 
   const { periodDays } = await app.savedState();
@@ -90,5 +90,30 @@ test('deslizar el dedo cambia de mes (y no selecciona un día sin querer)', asyn
   await expect(title).toHaveText('Octubre 2026');
   await page.getByRole('button', { name: 'Ir a hoy' }).click();
   await expect(title).toHaveText('Noviembre 2026');
-  await expect(page.getByRole('button', { name: '2026-11-20' })).toHaveAttribute('aria-current', 'date');
+  await expect(page.locator('[data-date="2026-11-20"]')).toHaveAttribute('aria-current', 'date');
+});
+
+test('cada registro tiene su emoji en el calendario y hay referencias de qué significa cada uno', async ({ page }) => {
+  const app = new App(page);
+  await app.goto();
+  const sheet = await app.openLog();
+  await sheet.getByRole('checkbox').first().check(); // el flujo se registra en días de período
+  await sheet.getByRole('button', { name: 'Manchado' }).click();
+  await sheet.getByRole('button', { name: '♥ Con protección' }).click();
+  await sheet.getByRole('button', { name: /Feliz/ }).click();
+  await sheet.getByRole('button', { name: 'Guardar' }).click();
+  await expect(sheet).toBeHidden();
+
+  await app.openTab('Calendario');
+  const day = page.getByRole('button', { name: '20 de noviembre', exact: true });
+  await expect(day).toHaveAttribute('data-date', '2026-11-20');
+  await expect(day.locator('.cal__marks')).toHaveText('💧❤️😊'); // manchado, sexo y ánimo: cada uno con su ícono
+  await expect(day).toHaveAttribute('aria-description', /Período.*Manchado.*Relaciones con protección.*Ánimo: feliz/);
+
+  const refs = page.locator('details.legend-more');
+  await expect(refs.getByText('Relaciones sexuales')).toBeHidden();
+  await refs.getByText('¿Qué significa cada ícono?').click();
+  await expect(refs.getByText('Relaciones sexuales')).toBeVisible();
+  await expect(refs.getByText('Manchado')).toBeVisible();
+  await expect(refs.getByText('Píldora tomada')).toBeVisible();
 });

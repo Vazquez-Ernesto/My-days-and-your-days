@@ -152,16 +152,18 @@ p { margin: 4px 0; }
 .cal__wd { text-align: center; font-size: 0.72rem; color: var(--muted); padding: 4px 0; font-weight: 800; }
 /* columnas sin espacio entre sí: así las bandas (período, fértil) se ven continuas */
 .cal__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; row-gap: 6px; }
-.cal__day { position: relative; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+.cal__day { position: relative; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   background: none; border-radius: 0; color: var(--text); }
 .cal__day.is-outside { background: none; }
 .cal__num { position: relative; z-index: 1; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%;
   font-weight: 700; font-size: 0.95rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .cal__cd { font-size: 0.58rem; color: var(--muted); line-height: 1; min-height: 0.6rem; font-variant-numeric: tabular-nums; }
-.cal__marks { position: absolute; z-index: 2; top: 3px; left: calc(50% + 12px); display: flex; flex-direction: column; gap: 2px; align-items: center; }
-.mark { font-style: normal; font-size: 0.6rem; line-height: 1; }
-.mark--heart { color: var(--primary); }
-.mark--dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+.cal__cd { position: relative; z-index: 1; }
+/* fila de emojis: cada registro tiene su ícono (ver "¿Qué significa cada ícono?") */
+.cal__marks { position: relative; z-index: 1; display: flex; gap: 0; align-items: center; justify-content: center;
+  height: 12px; max-width: 100%; overflow: hidden; }
+.mark { font-style: normal; font-size: 0.54rem; line-height: 1; letter-spacing: 0; }
+.mark--more { font-size: 0.5rem; letter-spacing: -0.02em; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* bandas continuas */
 .band::before { content: ''; position: absolute; inset: 4px 0; z-index: 0; }
@@ -169,7 +171,7 @@ p { margin: 4px 0; }
 .band--end::before { right: 3px; border-top-right-radius: 22px; border-bottom-right-radius: 22px; }
 .band--period::before { background: var(--period); }
 .band--period { color: #fff; }
-.band--period .cal__cd, .band--period .mark--heart { color: rgba(255, 255, 255, 0.85); }
+.band--period .cal__cd, .band--period .mark--more { color: rgba(255, 255, 255, 0.85); }
 .band--predicted::before { background: color-mix(in oklab, var(--period) 12%, transparent); border: 1.5px dashed var(--period); border-left-width: 0; border-right-width: 0; }
 .band--predicted.band--start::before { border-left-width: 1.5px; }
 .band--predicted.band--end::before { border-right-width: 1.5px; }
@@ -191,8 +193,24 @@ p { margin: 4px 0; }
 @keyframes calFromLeft { from { opacity: 0; transform: translateX(-28px); } }
 .cal__hint { text-align: center; margin-top: 6px; font-size: 0.72rem; }
 
-.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 12px; font-size: 0.75rem; color: var(--muted); }
-.legend span { display: flex; align-items: center; gap: 5px; }
+.legend-wrap { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; font-size: 0.75rem; color: var(--muted); }
+.legend li { display: flex; align-items: center; gap: 5px; }
+.lg--today { width: 10px; border-radius: 50%; background: var(--text); }
+/* referencias de íconos: <details> nativo (se abre con teclado y lo encuentra la búsqueda del navegador) */
+.legend-more { border-radius: 14px; background: var(--surface-2); }
+.legend-more summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 12px; font-size: 0.82rem; font-weight: 700; color: var(--primary); list-style: none; border-radius: 14px; }
+.legend-more summary::-webkit-details-marker { display: none; }
+.legend-more summary::after { content: '▾'; font-size: 0.8em; }
+.legend-more[open] summary::after { content: '▴'; }
+.legend-more summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.legend-icons { list-style: none; margin: 0; padding: 0 14px 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px 12px; font-size: 0.8rem; color: var(--text); }
+.legend-icons li { display: flex; align-items: center; gap: 8px; }
+.legend-icons__emoji { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px;
+  background: var(--surface); font-size: 0.95rem; }
+.legend-icons__more, .legend-icons__num { font-size: 0.7rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
 .lg { width: 14px; height: 10px; border-radius: 6px; display: inline-block; }
 .lg--period { background: var(--period); }
 .lg--predicted { border: 1.5px dashed var(--period); }
@@ -229,7 +247,7 @@ p { margin: 4px 0; }
 .chip--fertile, .chip--ovulation { background: color-mix(in oklab, var(--fertile) 22%, transparent); color: var(--ovulation); border-color: transparent; font-weight: 700; }
 [data-theme='light'] .chip--fertile, [data-theme='light'] .chip--ovulation { color: #7a4fc0; }
 .day-detail { display: flex; flex-direction: column; gap: 6px; }
-.log-summary { display: flex; flex-wrap: wrap; gap: 6px; }
+.log-summary { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .note { width: 100%; font-style: italic; color: var(--muted); margin: 2px 0; }
 
 /* ===== Chips / ánimo ===== */

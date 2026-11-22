@@ -28,9 +28,9 @@ test('el calendario marca período, fertilidad y ovulación', async ({ page }) =
   const app = new App(page);
   await app.goto();
   await app.openTab('Calendario');
-  await expect(page.getByRole('button', { name: '2026-11-03' })).toHaveClass(/is-period/);
-  await expect(page.getByRole('button', { name: '2026-11-17' })).toHaveClass(/is-ovulation/);
-  await expect(page.getByRole('button', { name: '2026-11-13' })).toHaveClass(/is-fertile/);
+  await expect(page.locator('[data-date="2026-11-03"]')).toHaveClass(/is-period/);
+  await expect(page.locator('[data-date="2026-11-17"]')).toHaveClass(/is-ovulation/);
+  await expect(page.locator('[data-date="2026-11-13"]')).toHaveClass(/is-fertile/);
   await page.getByRole('button', { name: 'Siguiente' }).click();
-  await expect(page.getByRole('button', { name: '2026-12-01' })).toHaveClass(/is-predicted/);
+  await expect(page.locator('[data-date="2026-12-01"]')).toHaveClass(/is-predicted/);
 });
