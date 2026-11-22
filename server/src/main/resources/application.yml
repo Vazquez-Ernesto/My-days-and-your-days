@@ -32,6 +32,15 @@ app:
     # Identifica a quien manda las notificaciones (lo exige el estándar VAPID). Una URL https es válida.
     subject: ${VAPID_SUBJECT:https://vazquez-ernesto.github.io/My-days-and-your-days/}
     scheduler-enabled: true
+  billing:
+    # Cobros con Mercado Pago. Sin MP_ACCESS_TOKEN y MP_USD_RATE, los pagos quedan desactivados.
+    access-token: ${MP_ACCESS_TOKEN:}
+    usd-rate: ${MP_USD_RATE:}          # pesos por dólar: actualizalo cuando cambie la cotización
+    monthly-usd: 2.99
+    yearly-usd: 19.99
+    trial-days: 7
+    back-url: ${MP_BACK_URL:https://vazquez-ernesto.github.io/My-days-and-your-days/#premium}
+    api-base: https://api.mercadopago.com
   cors:
     allowed-origins: >-
       http://localhost:5173,http://localhost:4173,https://vazquez-ernesto.github.io

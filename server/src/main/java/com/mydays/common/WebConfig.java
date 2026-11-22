@@ -23,10 +23,10 @@ public class WebConfig implements WebMvcConfigurer {
         this.allowedOrigins = allowedOrigins.split("\\s*,\\s*");
     }
 
-    /** Todas las rutas /api/** piden token, salvo el registro de dispositivos. */
+    /** Todas las rutas /api/** piden token, salvo el registro, la clave push, los precios y el aviso de Mercado Pago. */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(auth).addPathPatterns("/api/**").excludePathPatterns("/api/devices", "/api/push/public-key");
+        registry.addInterceptor(auth).addPathPatterns("/api/**").excludePathPatterns("/api/devices", "/api/push/public-key", "/api/billing/prices", "/api/billing/webhook");
     }
 
     @Override

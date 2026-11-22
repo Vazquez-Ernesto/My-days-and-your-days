@@ -18,3 +18,8 @@ services:
     envVars:
       - key: DATABASE_URL   # la URL DIRECTA de Neon (sin -pooler)
         sync: false         # Render la pide en el momento de crear el servicio
+      # Cobros con Mercado Pago (opcionales: sin estas dos, los pagos quedan apagados y la app muestra la demo)
+      - key: MP_ACCESS_TOKEN  # Mercado Pago → Tus integraciones → Credenciales (empezá con las de PRUEBA: TEST-...)
+        sync: false
+      - key: MP_USD_RATE      # pesos por dólar para convertir USD 2,99 / 19,99 (ej. 1500)
+        sync: false

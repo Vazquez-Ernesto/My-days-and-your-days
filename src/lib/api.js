@@ -21,6 +21,11 @@ export const ERROR_TEXT = {
   PUSH_UNSUPPORTED: 'Este navegador no admite notificaciones push. En iPhone, instalá la app en el inicio (Compartir → Agregar a inicio) y abrila desde el ícono.',
   PUSH_DENIED: 'Las notificaciones están bloqueadas. Activalas en Ajustes del iPhone → Notificaciones → My Days.',
   NO_PUSH_SUBSCRIPTION: 'Las notificaciones no están activadas en este teléfono.',
+  BILLING_DISABLED: 'Los pagos todavía no están habilitados. Probá de nuevo en unos días.',
+  ALREADY_PREMIUM: 'Ya tenés una suscripción activa.',
+  PAYMENT_PROVIDER_ERROR: 'Mercado Pago no respondió bien. Probá de nuevo en un rato.',
+  NO_SUBSCRIPTION: 'No hay una suscripción activa para cancelar.',
+  VALIDATION_ERROR: 'Revisá los datos e intentá de nuevo.',
 };
 export const errorText = (e) => ERROR_TEXT[e?.code] ?? e?.message ?? 'Algo salió mal. Intentá de nuevo.';
 
@@ -63,6 +68,10 @@ export function createApi(baseUrl = API_URL, fetchImpl = (...args) => fetch(...a
     deleteSubscription: (token) => request('/api/push/subscription', { method: 'DELETE', token }),
     putSchedule: (token, items) => request('/api/push/schedule', { method: 'PUT', token, body: { items } }),
     testPush: (token) => request('/api/push/test', { method: 'POST', token }),
+    getPrices: () => request('/api/billing/prices'),
+    checkout: (token, period, email) => request('/api/billing/checkout', { method: 'POST', token, body: { period, email } }),
+    myBilling: (token) => request('/api/billing/me', { token }),
+    cancelBilling: (token) => request('/api/billing/cancel', { method: 'POST', token }),
     getMessages: (token, pairId, since) =>
       request(`/api/pairs/${pairId}/messages${since ? `?since=${encodeURIComponent(since)}` : ''}`, { token }),
   };
