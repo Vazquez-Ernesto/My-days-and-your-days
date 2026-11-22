@@ -803,7 +803,7 @@ h1, h2, .card__title { font-weight: 800; }
 .stats-entry { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; color: var(--text); min-height: 64px; }
 .stats-entry strong { display: block; }
 .stats-entry__icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); font-size: 1.3rem; flex: none; }
-.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; border: 0; margin: 0; padding: 0; min-width: 0; }
 .filters .chip { min-height: 40px; }
 .reg { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 0.9rem; text-wrap: pretty; }
 .chart { margin: 0; overflow-x: clip; } /* nada del gráfico ensancha la página */

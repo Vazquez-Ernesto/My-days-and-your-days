@@ -65,12 +65,13 @@ export default function Stats({ onBack, onUpgrade }) {
         <Regularity reg={reg} />
       </div>
 
-      <div className="filters" role="group" aria-label="Período de tiempo">
+      <fieldset className="filters">
+        <legend className="visually-hidden">Período de tiempo</legend>
         {RANGES.map((r) => (
           <button key={r.months} type="button" className={`chip ${range === r.months ? 'is-on' : ''}`} aria-pressed={range === r.months}
             onClick={() => setRange(r.months)}>{r.label}</button>
         ))}
-      </div>
+      </fieldset>
 
       <PremiumGate feature="advancedStats" title="Gráficos de tu ciclo" onUpgrade={onUpgrade}>
         <div className="card stack">

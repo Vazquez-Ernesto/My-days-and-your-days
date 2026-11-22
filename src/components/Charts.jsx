@@ -21,7 +21,10 @@ export function DataTable({ caption, columns, rows }) {
         <thead><tr>{columns.map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r[0]}>{r.map((v, i) => (i === 0 ? <th key={i} scope="row">{v}</th> : <td key={i}>{v}</td>))}</tr>
+            <tr key={r[0]}>
+              <th scope="row">{r[0]}</th>
+              {r.slice(1).map((v, i) => <td key={columns[i + 1]}>{v}</td>)}
+            </tr>
           ))}
         </tbody>
       </table>
