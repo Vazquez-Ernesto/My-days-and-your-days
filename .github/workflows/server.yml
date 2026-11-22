@@ -20,6 +20,8 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: maven
+      - name: Descargar Maven (con reintentos)
+        run: for i in 1 2 3; do ./mvnw -q -v && break || { echo "Reintento $i…"; sleep 10; }; done
       - run: ./mvnw -B verify
 
   # Los mismos tests contra PostgreSQL real (como en producción)
@@ -48,4 +50,6 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: maven
+      - name: Descargar Maven (con reintentos)
+        run: for i in 1 2 3; do ./mvnw -q -v && break || { echo "Reintento $i…"; sleep 10; }; done
       - run: ./mvnw -B verify

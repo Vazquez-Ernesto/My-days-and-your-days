@@ -7,6 +7,7 @@ import QuizCard from '../components/QuizCard.jsx';
 import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { AdBanner } from '../components/Premium.jsx';
+import Mascot, { PHASE_MOOD } from '../components/Mascot.jsx';
 import { PHASES, startPeriod, endPeriod, pregnancyChance, nextFertileWindow } from '../lib/cycle.js';
 import { formatLong, formatShort, formatWeekday, diffDays } from '../lib/dates.js';
 
@@ -18,6 +19,16 @@ export const CHANCE_TEXT = {
 
 export const PHASE_SHORT = {
   menstrual: 'Período', follicular: 'Folicular', fertile: 'Fértil', ovulation: 'Ovulación', luteal: 'Lútea', late: 'Atraso',
+};
+
+/** Lo que dice Luni en cada fase (castellano rioplatense). */
+export const LUNI_SAYS = {
+  menstrual: 'Hoy toca mimarte: mantita, tecito y nada de exigirte 💤',
+  follicular: '¡Con pilas! Buen momento para arrancar algo nuevo ✨',
+  fertile: 'Estás en tus días más fértiles 🌸',
+  ovulation: 'Hoy es tu día de ovulación estimado 🌸',
+  luteal: 'Bajá un cambio: lo que sentís estos días es normal 🌙',
+  late: 'Tu período viene atrasado. Si te preocupa, hacete un test o consultá 💗',
 };
 
 /** Saludo según la hora del día. */
@@ -72,6 +83,11 @@ export default function Home({ onUpgrade, onSettings, onQuiz, onLog }) {
 
       <ReminderBanners />
 
+      <div className="luni-say">
+        <Mascot mood={PHASE_MOOD[summary.phase]} size={64} interactive />
+        <p className="bubble">{LUNI_SAYS[summary.phase]}</p>
+      </div>
+
       <div className="hero">
         <CycleRing summary={summary}>
           <span className={`phase-chip phase-chip--${summary.phase}`}>{PHASE_SHORT[summary.phase]}</span>
@@ -116,7 +132,7 @@ export default function Home({ onUpgrade, onSettings, onQuiz, onLog }) {
           <span className={`chance-pill chance-pill--${chance}`}>{chance === 'alta' ? 'Fertilidad alta' : chance === 'media' ? 'Fertilidad media' : 'Fertilidad baja'}</span>
         </div>
         <CycleTimeline summary={summary} start={periods[periods.length - 1].start} />
-        <p className="muted small"><strong>{phase.label}.</strong> {phase.tip} {CHANCE_TEXT[chance]}.</p>
+        <p className="muted small"><strong>{phase.label}.</strong> {CHANCE_TEXT[chance]}.</p>
       </div>
 
       {state.sharing.shares.moments && <MomentCard />}

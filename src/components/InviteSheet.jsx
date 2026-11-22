@@ -6,6 +6,7 @@ import { api, errorText } from '../lib/api.js';
 import { generateKey } from '../lib/crypto.js';
 import { API_URL } from '../lib/config.js';
 import { timeAgo } from '../lib/partner.js';
+import Mascot from './Mascot.jsx';
 
 /** Ella registra el teléfono si hace falta y crea (o reutiliza) la invitación en el servidor. */
 async function prepareInvite({ state, updateCloud }) {
@@ -60,6 +61,7 @@ export default function InviteSheet({ onClose }) {
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet invite" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Invitar a mi pareja">
         <div className="sheet__handle" />
+        <Mascot mood="love" size={72} className="center-block" />
         <h2>Invitar a mi pareja</h2>
 
         {c.status === 'active' ? (
