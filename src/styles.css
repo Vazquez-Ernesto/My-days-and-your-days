@@ -338,6 +338,7 @@ textarea, .input {
 .plans::backdrop { background: color-mix(in oklab, var(--bg) 70%, transparent); overflow: hidden; overscroll-behavior: contain; }
 .plans h1 { margin: 0; font-size: 1.6rem; text-wrap: balance; }
 .plans p { margin: 0; text-wrap: pretty; }
+.plans__lead { display: block; text-wrap: pretty; }
 .plans__close { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; margin: 0; }
 .plans__close .icon-btn { min-width: 44px; min-height: 44px; }
 .plans__luni { align-self: center; }
@@ -360,7 +361,7 @@ textarea, .input {
 .offer .input { font-size: max(1rem, 1em); min-height: 52px; }
 .offer .input:user-invalid { border-color: var(--period); }
 .manage { display: flex; flex-direction: column; gap: 12px; }
-.manage__status { font-weight: 700; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); }
+.manage__status { display: block; font-weight: 700; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); }
 .manage__confirm { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; border: 2px solid var(--period); text-align: left; }
 .manage__confirm .row { display: flex; gap: 8px; }
 .manage__confirm .row .btn { flex: 1; }

@@ -46,15 +46,15 @@ export function useBilling(enabled) {
     if (!returning) return undefined;
     history.replaceState(null, '', window.location.pathname);
     let cancelled = false;
-    (async () => {
-      for (let i = 0; i < 6 && !cancelled; i++) {
-        const next = await refresh();
-        if (next?.plan === 'premium') break;
-        await new Promise((r) => setTimeout(r, 2500));
-      }
-      if (!cancelled) setReturning(false);
-    })();
-    return () => { cancelled = true; };
+    let timer;
+    // reintenta cada 2,5 s, hasta 6 veces, hasta que el servidor confirme Premium
+    const attempt = (n) => refresh().then((next) => {
+      if (cancelled) return;
+      if (next?.plan === 'premium' || n >= 5) setReturning(false);
+      else timer = setTimeout(() => { void attempt(n + 1); }, 2500);
+    });
+    void attempt(0);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [returning, refresh]);
 
   return { returning, refresh };

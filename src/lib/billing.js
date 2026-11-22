@@ -5,9 +5,26 @@ const ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS',
 const usd = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** 4485 → "$ 4.485" */
-export const formatArs = (n) => ars.format(Number(n)).replace(/ /g, ' ');
+export const formatArs = (n) => ars.format(Number(n)).replaceAll('\u00a0', ' '); // espacio duro → espacio común
 /** 2.99 → "USD 2,99" */
 export const formatUsd = (n) => `USD ${usd.format(Number(n))}`;
+
+const CHECKOUT_HOSTS = ['mercadopago.com.ar', 'mercadopago.com'];
+
+/**
+ * Solo dejamos salir de la app hacia Mercado Pago (https). Si el link de pago no es de
+ * Mercado Pago (respuesta alterada, error del servidor), no redirigimos: evita un "open redirect".
+ */
+export function safeCheckoutUrl(raw) {
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  const trusted = CHECKOUT_HOSTS.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`));
+  return url.protocol === 'https:' && trusted ? url.href : null;
+}
 
 /** Precio mensual equivalente del plan anual, para mostrar el ahorro. */
 export function yearlySaving(prices) {

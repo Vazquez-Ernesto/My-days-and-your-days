@@ -4,6 +4,7 @@ import { App, freezeDate, seed } from './helpers.js';
 // Simulamos las respuestas de /api/billing para no depender de Mercado Pago (el resto de la API es real).
 const API = 'http://localhost:8080/api/billing';
 const PRICES = { enabled: true, trialDays: 7, monthly: { usd: 2.99, ars: 4485 }, yearly: { usd: 19.99, ars: 29985 } };
+const MP_CHECKOUT = 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_id=pre_1';
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
 async function mockBilling(page, { me = { plan: 'free' }, checkout, cancel } = {}) {
@@ -13,8 +14,12 @@ async function mockBilling(page, { me = { plan: 'free' }, checkout, cancel } = {
   await page.route(`${API}/me`, (r) => r.fulfill(json(current)));
   await page.route(`${API}/checkout`, (r) => {
     calls.checkout.push(r.request().postDataJSON());
-    return r.fulfill(checkout ? checkout() : json({ checkoutUrl: 'http://localhost:4173/?preapproval_id=pre_1#premium' }));
+    return r.fulfill(checkout ? checkout() : json({ checkoutUrl: MP_CHECKOUT }));
   });
+  // "Mercado Pago": al terminar de pagar, vuelve a la app (back_url) como el real
+  await page.route('https://www.mercadopago.com.ar/**', (r) => r.fulfill({
+    status: 302, headers: { location: 'http://localhost:4173/?preapproval_id=pre_1#premium' },
+  }));
   await page.route(`${API}/cancel`, (r) => {
     calls.cancel++;
     current = cancel;
@@ -106,4 +111,17 @@ test('con pagos habilitados, el servidor manda: un Premium de demo vuelve a Grat
   await app.goto();
   await expect(page.getByText('Anuncio', { exact: true })).toBeVisible();
   expect((await app.savedState()).plan).toBe('free');
+});
+
+test('si el link de pago no es de Mercado Pago, no sale de la app', async ({ page }) => {
+  await seed(page);
+  await mockBilling(page, { checkout: () => json({ checkoutUrl: 'https://mercadopago.com.ar.sitio-falso.com/pagar' }) });
+  const app = new App(page);
+  await app.goto();
+  await page.getByText('Probá Premium').click();
+  const dialog = page.getByRole('dialog', { name: 'My Days Premium' });
+  await dialog.getByLabel('Tu email de Mercado Pago').fill('ana@example.com');
+  await dialog.getByRole('button', { name: 'Probar 7 días gratis' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Mercado Pago no respondió bien. Probá de nuevo en un rato.');
+  await expect(page).toHaveURL(/localhost:4173/);
 });

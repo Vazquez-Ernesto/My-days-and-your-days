@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../state/store.jsx';
 import { PLANS, COMPARE } from '../state/plans.js';
-import { api, errorText } from '../lib/api.js';
+import { api, errorText, ApiError } from '../lib/api.js';
 import { API_URL } from '../lib/config.js';
 import { formatLong, todayISO } from '../lib/dates.js';
-import { formatArs, formatUsd, yearlySaving, billingSummary } from '../lib/billing.js';
+import { formatArs, formatUsd, yearlySaving, billingSummary, safeCheckoutUrl } from '../lib/billing.js';
 import Mascot from '../components/Mascot.jsx';
 
 const LOCAL_PRICES = {
@@ -25,7 +25,7 @@ function Cell({ value }) {
 /** Tabla Gratis vs Premium (guía `responsive-table`: tabla real con encabezados y caption). */
 function CompareTable() {
   return (
-    <div className="compare-wrap" role="region" aria-labelledby="compare-caption" tabIndex={0}>
+    <section className="compare-wrap" aria-labelledby="compare-caption">
       <table className="compare-table">
         <caption id="compare-caption">Qué incluye cada plan</caption>
         <thead>
@@ -41,7 +41,7 @@ function CompareTable() {
           ))}
         </tbody>
       </table>
-    </div>
+    </section>
   );
 }
 
@@ -55,6 +55,7 @@ function Offer({ prices, onDemo }) {
   const errorRef = useRef(null);
   const saving = yearlySaving(prices);
   const trial = prices.trialDays;
+  const submitLabel = trial ? `Probar ${trial} días gratis` : 'Suscribirme';
 
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
 
@@ -70,7 +71,9 @@ function Offer({ prices, onDemo }) {
         updateCloud({ token, deviceId });
       }
       const { checkoutUrl } = await api.checkout(token, period, email);
-      window.location.assign(checkoutUrl); // Mercado Pago: ahí se carga la tarjeta o se paga con saldo
+      const target = safeCheckoutUrl(checkoutUrl);
+      if (!target) throw new ApiError(0, 'PAYMENT_PROVIDER_ERROR');
+      window.location.assign(target); // Mercado Pago: ahí se carga la tarjeta o se paga con saldo
     } catch (err) {
       setError(err);
       setBusy(false);
@@ -110,7 +113,7 @@ function Offer({ prices, onDemo }) {
       {error && <p className="notice notice--error" role="alert" tabIndex={-1} ref={errorRef}>{errorText(error)}</p>}
 
       <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
-        {busy ? 'Abriendo Mercado Pago…' : trial ? `Probar ${trial} días gratis` : 'Suscribirme'}
+        {busy ? 'Abriendo Mercado Pago…' : submitLabel}
       </button>
       <p className="disclaimer center">
         {prices.enabled
@@ -129,6 +132,9 @@ function Manage({ onClose }) {
   const [error, setError] = useState(null);
   const summary = billingSummary(state.billing, dateOf);
   const fromServer = Boolean(state.billing);
+  const keepRef = useRef(null);
+  // al pedir confirmación, el foco va a la opción segura (guía `dialog`)
+  useEffect(() => { if (confirming) keepRef.current?.focus(); }, [confirming]);
 
   const cancel = async () => {
     setBusy(true);
@@ -146,7 +152,7 @@ function Manage({ onClose }) {
 
   return (
     <div className="manage">
-      <p className="manage__status" role="status">{summary ?? 'Tenés todas las funciones Premium.'}</p>
+      <output className="manage__status">{summary ?? 'Tenés todas las funciones Premium.'}</output>
       {fromServer && state.billing.amountArs != null && state.billing.status === 'authorized' && (
         <p className="muted small">{formatArs(state.billing.amountArs)} por {state.billing.period === 'YEARLY' ? 'año' : 'mes'}, con Mercado Pago</p>
       )}
@@ -155,7 +161,7 @@ function Manage({ onClose }) {
         <div className="manage__confirm">
           <p id="cancel-help">No se te va a cobrar más. Seguís con Premium hasta {state.billing.nextPaymentAt ? `el ${dateOf(state.billing.nextPaymentAt)}` : 'el final del período'}.</p>
           <div className="row">
-            <button type="button" className="btn btn--soft" onClick={() => setConfirming(false)} autoFocus>Mantener Premium</button>
+            <button type="button" className="btn btn--soft" onClick={() => setConfirming(false)} ref={keepRef}>Mantener Premium</button>
             <button type="button" className="btn btn--danger" onClick={() => { void cancel(); }} disabled={busy} aria-describedby="cancel-help">
               {busy ? 'Cancelando…' : 'Sí, cancelar'}
             </button>
@@ -210,11 +216,11 @@ export default function Plans({ onClose, returning = false, onRefresh }) {
   return (
     <dialog ref={dialog} className="plans" aria-labelledby="plans-title">
       <form method="dialog" className="plans__close">
-        <button className="icon-btn" aria-label="Cerrar">✕</button>
+        <button type="submit" className="icon-btn" aria-label="Cerrar">✕</button>
       </form>
       <Mascot mood={mood} size={96} className="plans__luni" />
       <h1 id="plans-title">{title}</h1>
-      <p className="muted" role={returning ? 'status' : undefined}>{lead}</p>
+      {returning ? <output className="muted plans__lead">{lead}</output> : <p className="muted">{lead}</p>}
 
       {!returning && (isPremium
         ? <Manage onClose={() => dialog.current?.close()} />

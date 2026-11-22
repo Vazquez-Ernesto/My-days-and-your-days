@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatArs, formatUsd, yearlySaving, isReturnFromCheckout, planFromServer, billingSummary } from './billing.js';
+import { formatArs, formatUsd, yearlySaving, isReturnFromCheckout, planFromServer, billingSummary, safeCheckoutUrl } from './billing.js';
 
 const prices = { enabled: true, trialDays: 7, monthly: { usd: 2.99, ars: 4485 }, yearly: { usd: 19.99, ars: 29985 } };
 
@@ -26,6 +26,17 @@ describe('suscripción Premium', () => {
     expect(planFromServer(prices, null)).toEqual({ plan: 'free', billing: null });
     expect(planFromServer(prices, { plan: 'premium', status: 'authorized', period: 'MONTHLY', nextPaymentAt: '2026-12-22T12:00:00Z', amountArs: 4485 }))
       .toEqual({ plan: 'premium', billing: { status: 'authorized', period: 'MONTHLY', nextPaymentAt: '2026-12-22T12:00:00Z', amountArs: 4485 } });
+  });
+
+  it('solo redirige a links https de Mercado Pago', () => {
+    const ok = 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_id=2c93';
+    expect(safeCheckoutUrl(ok)).toBe(ok);
+    expect(safeCheckoutUrl('https://mercadopago.com/x')).toBe('https://mercadopago.com/x');
+    expect(safeCheckoutUrl('http://www.mercadopago.com.ar/x')).toBeNull();          // sin https
+    expect(safeCheckoutUrl('https://mercadopago.com.ar.evil.com/x')).toBeNull();    // dominio parecido
+    expect(safeCheckoutUrl('https://evilmercadopago.com.ar/x')).toBeNull();
+    expect(safeCheckoutUrl('javascript:alert(1)')).toBeNull();
+    expect(safeCheckoutUrl('no es un link')).toBeNull();
   });
 
   it('resume el estado en castellano', () => {
