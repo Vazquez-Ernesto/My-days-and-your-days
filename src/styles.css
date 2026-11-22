@@ -17,6 +17,12 @@
   --ring-empty: #f8e1ea;
   --shadow: 0 6px 24px rgba(255, 92, 141, 0.12);
   --danger: #d9324f;
+  /* gráficos: validados con el script de la skill dataviz (contraste y escala) */
+  --chart-mark: #e8457a;
+  --chart-band: color-mix(in oklab, var(--muted) 14%, transparent);
+  --chart-grid: #f3e3ea;
+  --heat-1: #f98bb0; --heat-2: #ec5a8b; --heat-3: #c4346a; --heat-4: #8a1c48;
+  --heat-ink-1: #3b2030; --heat-ink-2: #ffffff; --heat-ink-3: #ffffff; --heat-ink-4: #ffffff;
   color-scheme: light;
 }
 
@@ -39,6 +45,11 @@
   --ring-empty: #22305f;
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   --danger: #ff6b81;
+  --chart-mark: #f0527f;
+  --chart-band: color-mix(in oklab, var(--muted) 18%, transparent);
+  --chart-grid: #22305f;
+  --heat-1: #8d3c72; --heat-2: #bd4479; --heat-3: #e95c8f; --heat-4: #ff9cbd;
+  --heat-ink-1: #ffffff; --heat-ink-2: #ffffff; --heat-ink-3: #1a0f1f; --heat-ink-4: #1a0f1f;
   color-scheme: dark;
 }
 
@@ -308,9 +319,6 @@ textarea, .input {
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .stat { display: flex; flex-direction: column; gap: 4px; }
 .stat__n { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
-.bars { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-top: 18px; }
-.bar { flex: 1; height: var(--h); background: linear-gradient(var(--primary-2), var(--primary)); border-radius: 8px 8px 4px 4px; position: relative; }
-.bar span { position: absolute; top: -18px; left: 0; right: 0; text-align: center; font-size: 0.75rem; font-weight: 700; }
 .hbar { display: grid; grid-template-columns: 110px 1fr 24px; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.85rem; }
 .hbar__track { height: 10px; background: var(--surface-2); border-radius: 5px; overflow: hidden; }
 .hbar__track div { height: 100%; background: var(--fertile); border-radius: 5px; }
@@ -790,3 +798,72 @@ h1, h2, .card__title { font-weight: 800; }
   background: var(--surface); border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 8px 0; }
 .tips .row { align-items: center; gap: 10px; }
+
+/* ===== Estadísticas (skill dataviz: marcas finas, grilla tenue, tooltip + tabla) ===== */
+.stats-entry { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; color: var(--text); min-height: 64px; }
+.stats-entry strong { display: block; }
+.stats-entry__icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); font-size: 1.3rem; flex: none; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters .chip { min-height: 40px; }
+.reg { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 0.9rem; text-wrap: pretty; }
+.chart { margin: 0; overflow-x: clip; } /* nada del gráfico ensancha la página */
+.chart__tip--start { left: 0; transform: none; }
+.chart__tip--end { left: auto; right: 0; transform: none; }
+.chart__plot { position: relative; display: grid; grid-template-columns: 28px 1fr; height: 168px; }
+.chart__y { position: relative; }
+.chart__y span { position: absolute; right: 6px; transform: translateY(-50%); font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chart__area { position: relative; }
+.chart__grid { position: absolute; left: 0; right: 0; height: 1px; background: var(--chart-grid); }
+.chart__band { position: absolute; left: 0; right: 0; background: var(--chart-band); border-radius: 4px; }
+.chart__band span { position: absolute; left: 6px; top: 4px; font-size: 0.65rem; font-style: normal; color: var(--muted); }
+.chart__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.chart__svg polyline { fill: none; stroke: var(--chart-mark); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+/* punto de 10px con anillo del color de la tarjeta; el área táctil es de 32px */
+.chart__dot { position: absolute; width: 32px; height: 32px; margin: -16px 0 0 -16px; padding: 0; border: 0; background: none; border-radius: 50%; }
+.chart__dot::before { content: ''; position: absolute; inset: 11px; border-radius: 50%; background: var(--chart-mark); box-shadow: 0 0 0 2px var(--surface); }
+.chart__dot:focus-visible { outline: 2px solid var(--text); outline-offset: -4px; }
+.chart__end { position: absolute; transform: translate(-100%, -170%); font-size: 0.72rem; font-weight: 800; color: var(--text); white-space: nowrap; pointer-events: none; }
+.chart__tip { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); z-index: 3; white-space: nowrap;
+  padding: 6px 9px; border-radius: 10px; background: var(--text); color: var(--bg-2); font-size: 0.72rem; font-weight: 700;
+  opacity: 0; pointer-events: none; transition: opacity 0.12s; }
+/* :focus (no solo :focus-visible): en iPhone un toque enfoca el botón y muestra el dato */
+.chart__dot:is(:hover, :focus) .chart__tip, .chart__bar:is(:hover, :focus) .chart__tip { opacity: 1; }
+.chart__x { position: relative; height: 20px; margin-left: 28px; }
+.chart__x span { position: absolute; top: 4px; transform: translateX(-50%); font-size: 0.66rem; color: var(--muted); white-space: nowrap; }
+.chart__x--cols { display: flex; justify-content: space-around; }
+.chart__x--cols span { position: static; transform: none; flex: 1; text-align: center; }
+.chart__cols { display: flex; align-items: flex-end; justify-content: space-around; }
+.chart__col { position: relative; flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+/* columna: máx 24px, punta redondeada 4px, base recta */
+.chart__bar { position: relative; width: min(24px, 70%); padding: 0; border: 0; background: var(--chart-mark); border-radius: 4px 4px 0 0; }
+.chart__bar::after { content: ''; position: absolute; inset: -6px -8px 0; } /* área táctil más grande */
+.chart__bar:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.chart__cap { position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); font-size: 0.72rem; font-weight: 800; color: var(--text); white-space: nowrap; }
+.chart-table summary { cursor: pointer; font-size: 0.8rem; font-weight: 700; color: var(--primary); min-height: 32px; display: flex; align-items: center; }
+.chart-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 4px; }
+.chart-table th, .chart-table td { text-align: left; padding: 6px 4px; border-top: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.chart-table thead th { color: var(--muted); font-size: 0.75rem; border-top: 0; }
+/* mapa de calor */
+.heat-wrap { overflow-x: auto; }
+.heat { width: 100%; border-collapse: separate; border-spacing: 2px; font-size: 0.78rem; }
+.heat thead th { font-size: 0.7rem; color: var(--muted); font-weight: 700; padding: 0 2px 4px; }
+.heat tbody th { text-align: left; font-weight: 600; padding-right: 6px; white-space: nowrap; }
+.heat__cell { text-align: center; border-radius: 6px; height: 34px; min-width: 44px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.heat--0 { background: var(--surface-2); color: var(--muted); }
+.heat--1 { background: var(--heat-1); color: var(--heat-ink-1); }
+.heat--2 { background: var(--heat-2); color: var(--heat-ink-2); }
+.heat--3 { background: var(--heat-3); color: var(--heat-ink-3); }
+.heat--4 { background: var(--heat-4); color: var(--heat-ink-4); }
+.heat-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin: 6px 0 0; font-size: 0.7rem; color: var(--muted); }
+.heat-legend i { width: 18px; height: 10px; border-radius: 3px; }
+/* barras ordenadas */
+.ranked { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: auto 1fr auto; gap: 10px 10px; align-items: center; }
+.ranked li { display: contents; }
+.ranked__name { font-size: 0.88rem; white-space: nowrap; }
+.ranked__track { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.ranked__track i { display: block; height: 100%; border-radius: 5px; background: var(--chart-mark); }
+.ranked__value { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+@media (forced-colors: active) {
+  .chart__dot::before, .chart__bar, .ranked__track i { background: CanvasText; }
+  .heat__cell { border: 1px solid CanvasText; }
+}

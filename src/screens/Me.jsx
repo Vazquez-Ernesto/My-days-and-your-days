@@ -4,6 +4,7 @@ import Header from '../components/Header.jsx';
 import Icon from '../components/Icons.jsx';
 import { PremiumGate } from '../components/Premium.jsx';
 import Mascot from '../components/Mascot.jsx';
+import Stats from './Stats.jsx';
 import { SYMPTOM_EMOJI, MOODS, FLOWS, SEX } from '../components/DayLogSheet.jsx';
 import { cycleLengths, cycleDayOf, phaseOfDay, symptomCounts, symptomPattern } from '../lib/cycle.js';
 import { addDays, formatShort, formatLong, diffDays } from '../lib/dates.js';
@@ -64,6 +65,7 @@ export default function Me({ onUpgrade, onSettings, onLog }) {
   const [range, setRange] = useState(3);
   const [phase, setPhase] = useState('all');
   const [pickedSymptom, setPickedSymptom] = useState(null);
+  const [showStats, setShowStats] = useState(false);
   const logs = state.logs;
 
   const from = addDays(today, -Math.round(range * 30.4));
@@ -79,7 +81,6 @@ export default function Me({ onUpgrade, onSettings, onLog }) {
   const duringPeriod = pattern.filter((r) => r.days.slice(0, r.periodLength).some(Boolean)).length;
 
   const lengths = cycleLengths(periods);
-  const maxLen = Math.max(35, ...lengths);
   const cyclesUsed = Math.min(6, lengths.length);
 
   const entries = Object.entries(logs).sort(([a], [b]) => a.localeCompare(b));
@@ -89,6 +90,8 @@ export default function Me({ onUpgrade, onSettings, onLog }) {
   const orgasmPct = inRange.length ? Math.round((inRange.filter(([, l]) => l.orgasm).length / inRange.length) * 100) : 0;
   const weights = entries.filter(([, l]) => l.weight).map(([d, l]) => [d, l.weight]);
   const temps = entries.filter(([, l]) => l.temp).map(([d, l]) => [d, l.temp]);
+
+  if (showStats) return <Stats onBack={() => setShowStats(false)} onUpgrade={onUpgrade} />;
 
   return (
     <section className="screen">
@@ -164,18 +167,14 @@ export default function Me({ onUpgrade, onSettings, onLog }) {
         </div>
       </PremiumGate>
 
-      <PremiumGate feature="advancedStats" title="Gráfico del largo de tus ciclos" onUpgrade={onUpgrade}>
-        <div className="card">
-          <h2 className="card__title">Largo de tus ciclos</h2>
-          {lengths.length === 0 ? <p className="muted">Aún no hay ciclos completos.</p> : (
-            <div className="bars">
-              {lengths.slice(-8).map((len, i) => (
-                <div key={i} className="bar" style={{ '--h': `${(len / maxLen) * 100}%` }}><span>{len}</span></div>
-              ))}
-            </div>
-          )}
-        </div>
-      </PremiumGate>
+      <button type="button" className="card stats-entry" onClick={() => setShowStats(true)}>
+        <span className="stats-entry__icon" aria-hidden="true">📊</span>
+        <span className="grow">
+          <strong>Estadísticas</strong>
+          <small className="muted">Largo de tus ciclos, períodos, síntomas por fase y ánimo</small>
+        </span>
+        <span aria-hidden="true">›</span>
+      </button>
 
       <div className="card stack">
         <h2 className="card__title">Vida sexual</h2>
