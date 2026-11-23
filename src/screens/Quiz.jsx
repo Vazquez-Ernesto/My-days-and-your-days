@@ -94,7 +94,7 @@ export default function Quiz({ onBack }) {
       )}
 
       {status === 'mismatch' && (
-        <div className="card center stack" role="status">
+        <div className="card center stack">
           <Mascot mood="worried" size={90} className="center-block" />
           <h2>Les tocaron preguntas distintas</h2>
           <p className="muted">
