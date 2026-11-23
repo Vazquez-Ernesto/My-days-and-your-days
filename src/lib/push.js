@@ -4,6 +4,7 @@
 //   y se suben al servidor, que solo conoce la hora de envío.
 // - El service worker (public/sw.js) descifra y muestra cada notificación.
 import { api, ApiError } from './api.js';
+import { currentQuizKey, roundOf } from './quiz.js';
 import { generateKey, encryptJSON, fingerprint } from './crypto.js';
 import { groupPeriods, cycleSummary } from './cycle.js';
 import { dueReminders } from './reminders.js';
@@ -119,11 +120,18 @@ export function buildSchedule(state, now = new Date(), today) {
     ? Boolean(state.cloud?.pairId && state.partner?.snapshot && !state.partner.snapshot.demo)
     : state.cloud?.status === 'active';
   if (linked) {
+    const quizDays = state.quiz?.days ?? {};
     for (const day of days) {
-      if (state.quiz?.days?.[day]?.mine) continue; // ya lo respondió
+      const key = currentQuizKey(quizDays, day);
+      const entry = quizDays[key];
+      // ya respondí y espero al otro (o ya vimos los resultados de hoy): no hay nada nuevo que avisar
+      if (entry?.mine) continue;
+      const round = roundOf(key) !== null;
       items.push({
         sendAt: localInstant(day, QUIZ_TIME),
-        payload: { title: 'Ya está el cuestionario del día 💬', body: '5 preguntas para conocerse más. Respondé y mirá en qué coinciden.', tag: `quiz:${day}` },
+        payload: round
+          ? { title: 'Tienen preguntas esperándolos 💬', body: '5 preguntas para conocerse más. Respondé y mirá en qué coinciden.', tag: `quiz:${key}` }
+          : { title: 'Ya está el cuestionario del día 💬', body: '5 preguntas para conocerse más. Respondé y mirá en qué coinciden.', tag: `quiz:${day}` },
       });
     }
   }

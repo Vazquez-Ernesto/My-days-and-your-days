@@ -8,6 +8,7 @@ import { encryptJSON, decryptJSON, fingerprint } from './crypto.js';
 import { buildSnapshot } from './partner.js';
 import { storeKeys, syncSchedule } from './push.js';
 import { SYNC_INTERVAL_MS } from './config.js';
+import { questionIds, parseQuizMessage, roundOf } from './quiz.js';
 
 const GONE = ['PAIR_NOT_FOUND', 'NOT_A_MEMBER', 'NO_PAIR'];
 
@@ -15,9 +16,11 @@ const GONE = ['PAIR_NOT_FOUND', 'NOT_A_MEMBER', 'NO_PAIR'];
 async function sendQuizAnswers(api, { state, markQuizSent }, myName) {
   const c = state.cloud;
   const pending = Object.entries(state.quiz.days).filter(([, d]) => d.mine && !d.sent);
-  for (const [date, d] of pending) {
+  for (const [key, d] of pending) {
+    const round = roundOf(key);
     await api.postMessage(c.token, c.pairId, await encryptJSON(c.key, {
-      type: 'quiz', date, answers: d.mine, name: myName, complete: Boolean(d.theirs),
+      type: 'quiz', ...(round === null ? { date: key } : { round }), answers: d.mine, name: myName, complete: Boolean(d.theirs),
+      questions: questionIds(c.pairId, key), // para comprobar que los dos respondieron las mismas preguntas
     }));
   }
   if (pending.length) markQuizSent(pending.map(([date]) => date));
@@ -60,7 +63,8 @@ async function readMessages(api, { state, receiveQuiz }, since) {
     try {
       const p = await decryptJSON(c.key, m);
       if (p.type === 'reply') replies.push({ text: p.text, name: p.name || '', at: m.createdAt });
-      if (p.type === 'quiz' && Array.isArray(p.answers)) receiveQuiz(p.date, p.answers, p.name);
+      const quiz = p.type === 'quiz' ? parseQuizMessage(p) : null; // validado: no guardamos cualquier cosa
+      if (quiz) receiveQuiz(quiz.key, quiz.answers, quiz.name, quiz.questions);
     } catch { /* mensaje ilegible: lo ignoramos */ }
   }
   return { replies, last: msgs.at(-1)?.createdAt ?? null };
@@ -219,7 +223,7 @@ export function useCloudSync(api = defaultApi) {
   const scheduleKey = pushEnabled
     ? JSON.stringify([store.today, store.state.periodDays, store.state.settings.reminders, store.state.settings.cycleLength,
       store.state.settings.periodLength, store.state.logs[store.today]?.pill, role, store.state.partner.snapshot?.syncedAt,
-      store.state.partner.prefs, Object.keys(store.state.quiz.days).filter((d) => store.state.quiz.days[d].mine).join(','),
+      store.state.partner.prefs, JSON.stringify(Object.entries(store.state.quiz.days).map(([k, d]) => [k, Boolean(d.mine), Boolean(d.theirs)])),
       cloud.status, cloud.pairId])
     : null;
   useEffect(() => {

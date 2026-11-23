@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store.jsx';
-import { quizStatus } from '../lib/quiz.js';
+import { quizStatus, currentQuizKey, roundOf } from '../lib/quiz.js';
 
 function untilMidnight(now) {
   const end = new Date(now);
@@ -25,12 +25,15 @@ export default function QuizCard({ onOpen }) {
   }, []);
   const available = useQuizAvailable();
   if (!available) return null;
-  const status = quizStatus(state.quiz.days[today]);
-  const partnerName = state.role === 'partner' ? state.partner.snapshot?.name : state.quiz.days[today]?.theirName || state.partnerProfile.name || 'tu pareja';
+  const key = currentQuizKey(state.quiz.days, today);
+  const round = roundOf(key);
+  const status = quizStatus(state.quiz.days[key]);
+  const partnerName = state.role === 'partner' ? state.partner.snapshot?.name : state.quiz.days[key]?.theirName || state.partnerProfile.name || 'tu pareja';
   const text = {
-    todo: '5 preguntas para conocerse más',
+    todo: round === null ? '5 preguntas para conocerse más' : `Ronda ${round + 1}: 5 preguntas para conocerse más`,
     waiting: `Esperando que ${partnerName} responda…`,
     done: '¡Ya están los resultados! 🔥',
+    mismatch: `Les tocaron preguntas distintas: actualicen la app`,
   }[status];
 
   return (
@@ -39,7 +42,8 @@ export default function QuizCard({ onOpen }) {
         <h2 className="card__title">Cuestionario en pareja 💬</h2>
         <p className="small">{text}</p>
       </div>
-      <span className="quiz-card__timer" aria-label="Tiempo restante">{untilMidnight(now)}</span>
+      {/* con rondas no hay apuro: las preguntas esperan hasta que respondan los dos */}
+      {round === null && <span className="quiz-card__timer" aria-label="Tiempo restante">{untilMidnight(now)}</span>}
       <span className="quiz-card__go" aria-hidden="true">→</span>
     </button>
   );

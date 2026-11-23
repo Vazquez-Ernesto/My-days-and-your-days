@@ -74,4 +74,24 @@ describe('recordatorio diario del cuestionario', () => {
   it('sin pareja vinculada, no hay cuestionario', () => {
     expect(quizItems(self({}))).toHaveLength(0);
   });
+
+  describe('con rondas', () => {
+    const roundItems = (quizDays) => buildSchedule(linked(quizDays), localInstant('2026-11-28', '10:00'), '2026-11-28')
+      .filter((i) => i.payload.tag.startsWith('quiz:'));
+    const both = (completedOn) => ({ mine: [0, 0, 0, 0, 0], theirs: [1, 1, 1, 1, 1], completedOn });
+
+    it('si la ronda está sin responder, avisa que hay preguntas esperando', () => {
+      const items = roundItems({});
+      expect(items).toHaveLength(7);
+      expect(items[0].payload).toMatchObject({ title: 'Tienen preguntas esperándolos 💬', tag: 'quiz:r0' });
+    });
+    it('si ya respondí y espero a mi pareja, no avisa nada (no hay preguntas nuevas)', () => {
+      expect(roundItems({ r0: { mine: [0, 0, 0, 0, 0] } })).toHaveLength(0);
+    });
+    it('si completamos la ronda hoy, desde mañana avisa la ronda siguiente', () => {
+      const items = roundItems({ r0: both('2026-11-28') });
+      expect(items).toHaveLength(6);
+      expect(items[0].payload.tag).toBe('quiz:r1');
+    });
+  });
 });

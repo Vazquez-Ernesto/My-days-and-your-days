@@ -3,6 +3,7 @@ import { groupPeriods, predictCycles, cycleSummary, averages } from '../lib/cycl
 import { todayISO } from '../lib/dates.js';
 import { hasFeature, PREDICTION_MONTHS } from './plans.js';
 import { dueReminders, normalizeReminders, DEFAULT_REMINDERS } from '../lib/reminders.js';
+import { sameQuestions } from '../lib/quiz.js';
 import { DEFAULT_SHARES, DEFAULT_PARTNER_PREFS, partnerReminders, makeInviteCode } from '../lib/partner.js';
 
 const STORAGE_KEY = 'mydays:v1';
@@ -151,17 +152,27 @@ export function StoreProvider({ children }) {
         ...s, partnerProfile: p ? { ...s.partnerProfile, ...p } : s.partnerProfile, cloud: { ...s.cloud, profilesSince: since ?? s.cloud.profilesSince },
       })),
       // --- cuestionario ---
-      answerQuiz: (date, answers) => setState((s) => ({
-        ...s, quiz: { days: { ...s.quiz.days, [date]: { ...s.quiz.days[date], mine: answers, sent: false } } },
-      })),
+      // key = fecha (banco original) o ronda ("r0", "r1"…). completedOn: el día en que estuvieron las dos respuestas.
+      answerQuiz: (key, answers) => setState((s) => {
+        const prev = s.quiz.days[key];
+        return { ...s, quiz: { days: { ...s.quiz.days, [key]: {
+          ...prev, mine: answers, sent: false, completedOn: prev?.theirs ? todayISO() : prev?.completedOn,
+        } } } };
+      }),
       markQuizSent: (dates) => setState((s) => {
         const days = { ...s.quiz.days };
         for (const d of dates) days[d] = { ...days[d], sent: true };
         return { ...s, quiz: { days } };
       }),
-      receiveQuiz: (date, answers, name) => setState((s) => ({
-        ...s, quiz: { days: { ...s.quiz.days, [date]: { ...s.quiz.days[date], theirs: answers, theirName: name || '' } } },
-      })),
+      receiveQuiz: (key, answers, name, questions) => setState((s) => {
+        const prev = s.quiz.days[key];
+        return { ...s, quiz: { days: { ...s.quiz.days, [key]: {
+          ...prev, theirs: answers, theirName: name || '',
+          // si su app tiene otra versión del banco, respondieron otras preguntas: no comparamos
+          mismatch: !sameQuestions(questions, s.cloud.pairId, key),
+          completedOn: prev?.completedOn ?? (prev?.mine ? todayISO() : undefined),
+        } } } };
+      }),
       // --- conexión con el servidor ---
       updateCloud: (patch) => setState((s) => ({ ...s, cloud: { ...s.cloud, ...patch } })),
       /** Ella se desvincula: borra la conexión pero conserva su ciclo y su dispositivo registrado. */
