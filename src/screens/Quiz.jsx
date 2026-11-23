@@ -41,7 +41,7 @@ export default function Quiz({ onBack }) {
   };
 
   const past = Object.entries(state.quiz.days)
-    .filter(([d, v]) => d !== today && v.mine && v.theirs)
+    .filter(([d, v]) => d !== today && v.mine && v.theirs && !v.mismatch)
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 7);
 
@@ -62,7 +62,7 @@ export default function Quiz({ onBack }) {
   }
 
   // --- inicio, espera o resultados ---
-  const result = entry?.mine && entry?.theirs ? compare(entry.mine, entry.theirs) : null;
+  const result = status === 'done' ? compare(entry.mine, entry.theirs) : null;
   const label = result ? syncLabel(result.matches) : null;
   return (
     <section className="screen quiz">
@@ -90,6 +90,17 @@ export default function Quiz({ onBack }) {
         <div className="card center stack" role="status">
           <Mascot mood="wait" size={90} className="center-block" />
           <p>¡Listo! Cuando {theirName} responda, te avisamos y van a ver los resultados juntos 💞</p>
+        </div>
+      )}
+
+      {status === 'mismatch' && (
+        <div className="card center stack" role="status">
+          <Mascot mood="worried" size={90} className="center-block" />
+          <h2>Les tocaron preguntas distintas</h2>
+          <p className="muted">
+            Uno de los dos tiene una versión vieja de la app. Para que el resultado sea justo, no los comparamos.
+            Cierren la app y vuelvan a abrirla para actualizarla; mañana ya les tocan las mismas.
+          </p>
         </div>
       )}
 

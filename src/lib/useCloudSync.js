@@ -8,6 +8,7 @@ import { encryptJSON, decryptJSON, fingerprint } from './crypto.js';
 import { buildSnapshot } from './partner.js';
 import { storeKeys, syncSchedule } from './push.js';
 import { SYNC_INTERVAL_MS } from './config.js';
+import { questionIds } from './quiz.js';
 
 const GONE = ['PAIR_NOT_FOUND', 'NOT_A_MEMBER', 'NO_PAIR'];
 
@@ -18,6 +19,7 @@ async function sendQuizAnswers(api, { state, markQuizSent }, myName) {
   for (const [date, d] of pending) {
     await api.postMessage(c.token, c.pairId, await encryptJSON(c.key, {
       type: 'quiz', date, answers: d.mine, name: myName, complete: Boolean(d.theirs),
+      questions: questionIds(c.pairId, date), // para comprobar que los dos respondieron las mismas preguntas
     }));
   }
   if (pending.length) markQuizSent(pending.map(([date]) => date));
@@ -60,7 +62,7 @@ async function readMessages(api, { state, receiveQuiz }, since) {
     try {
       const p = await decryptJSON(c.key, m);
       if (p.type === 'reply') replies.push({ text: p.text, name: p.name || '', at: m.createdAt });
-      if (p.type === 'quiz' && Array.isArray(p.answers)) receiveQuiz(p.date, p.answers, p.name);
+      if (p.type === 'quiz' && Array.isArray(p.answers)) receiveQuiz(p.date, p.answers, p.name, p.questions);
     } catch { /* mensaje ilegible: lo ignoramos */ }
   }
   return { replies, last: msgs.at(-1)?.createdAt ?? null };

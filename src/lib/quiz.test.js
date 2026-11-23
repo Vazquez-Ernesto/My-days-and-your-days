@@ -22,10 +22,10 @@ describe('cuestionario en pareja', () => {
     expect(a).not.toEqual(b);
   });
 
-  it('no se repiten preguntas hasta usar todo el banco', () => {
-    const days = Math.floor(QUESTIONS.length / QUESTIONS_PER_DAY);
+  it('no se repiten preguntas hasta usar todo el banco (banco original)', () => {
+    const days = Math.floor(64 / QUESTIONS_PER_DAY);
     const ids = [];
-    for (let d = 0; d < days; d++) ids.push(...questionsFor('pair-123', addDays('2026-11-16', d)).map((q) => q.id));
+    for (let d = 0; d < days; d++) ids.push(...questionsFor('pair-123', addDays('2026-01-01', d)).map((q) => q.id));
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -43,5 +43,51 @@ describe('cuestionario en pareja', () => {
     expect(quizStatus(undefined)).toBe('todo');
     expect(quizStatus({ mine: [0, 0, 0, 0, 0] })).toBe('waiting');
     expect(quizStatus({ mine: [0, 0, 0, 0, 0], theirs: [1, 1, 1, 1, 1] })).toBe('done');
+  });
+});
+
+import { BANKS, bankFor, questionIds, sameQuestions } from './quiz.js';
+import snapshot from './quiz.v1-snapshot.json';
+
+describe('banco de preguntas por versiones', () => {
+  it('hasta el cambio de banco, las preguntas del día son EXACTAMENTE las de antes', () => {
+    for (const [key, ids] of Object.entries(snapshot)) {
+      const [pair, date] = key.split('|');
+      if (date < BANKS[1].from) expect(questionIds(pair, date), key).toEqual(ids);
+    }
+  });
+
+  it('cada versión del banco abarca preguntas que existen', () => {
+    expect(BANKS.at(-1).size).toBe(QUESTIONS.length);
+    for (let i = 1; i < BANKS.length; i++) {
+      expect(BANKS[i].size).toBeGreaterThan(BANKS[i - 1].size);
+      expect(BANKS[i].from > BANKS[i - 1].from).toBe(true);
+    }
+  });
+
+  it('desde el banco nuevo aparecen preguntas nuevas y no se repiten hasta usarlas todas', () => {
+    expect(bankFor('2026-11-24')).toBe(BANKS[0]);
+    expect(bankFor('2026-11-25')).toBe(BANKS[1]);
+    const days = Math.floor(QUESTIONS.length / QUESTIONS_PER_DAY);
+    const ids = [];
+    for (let d = 0; d < days; d++) ids.push(...questionIds('pair-123', addDays('2026-11-25', d)));
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.some((id) => id >= BANKS[0].size)).toBe(true);
+  });
+
+  it('detecta si el otro respondió otras preguntas (app de otra versión)', () => {
+    const date = '2026-11-26';
+    expect(sameQuestions(questionIds('p', date), 'p', date)).toBe(true);
+    expect(sameQuestions([0, 1, 2, 3, 4], 'p', date)).toBe(questionIds('p', date).join() === '0,1,2,3,4');
+    expect(sameQuestions(undefined, 'p', '2026-11-20')).toBe(true);  // app vieja, banco viejo: mismas preguntas
+    expect(sameQuestions(undefined, 'p', '2026-11-26')).toBe(false); // app vieja, banco nuevo: no comparamos
+  });
+
+  it('las preguntas están en castellano rioplatense (voseo, sin "tú")', () => {
+    const tuteo = /\b(tú|tienes|quieres|puedes|eres|sabes|piensas|prefieres|haces|te gustaría que tú)\b/i;
+    for (const q of QUESTIONS) {
+      expect(`${q.q} ${q.o.join(' ')}`, q.q).not.toMatch(tuteo);
+      expect(q.cat.length).toBeGreaterThan(2);
+    }
   });
 });

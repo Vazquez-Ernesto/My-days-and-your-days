@@ -31,6 +31,7 @@ export default function QuizCard({ onOpen }) {
     todo: '5 preguntas para conocerse más',
     waiting: `Esperando que ${partnerName} responda…`,
     done: '¡Ya están los resultados! 🔥',
+    mismatch: `Les tocaron preguntas distintas: actualicen la app`,
   }[status];
 
   return (

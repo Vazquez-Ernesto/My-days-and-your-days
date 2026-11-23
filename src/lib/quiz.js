@@ -4,6 +4,17 @@ import { diffDays } from './dates.js';
 
 export const QUESTIONS_PER_DAY = 5;
 
+/**
+ * Versiones del banco. El orden de cada pareja sale de mezclar el banco, así que agregar preguntas
+ * cambiaría las del día: por eso cada versión rige desde una fecha y las anteriores quedan congeladas.
+ * Para sumar preguntas: agregarlas AL FINAL de QUESTIONS y sumar una versión con fecha futura
+ * (unos días de margen para que los dos teléfonos se actualicen).
+ */
+export const BANKS = [
+  { from: '2026-01-01', size: 64 },
+  { from: '2026-11-25', size: 159 },
+];
+
 export const QUESTIONS = [
   // --- comunicación ---
   { cat: 'Comunicación', q: 'Te escriben “Ok.” con punto final. ¿Qué pensás?', o: ['Que está todo bien', 'Que algo le pasa', 'Que está ocupado/a', 'Le pregunto directo qué onda'] },
@@ -82,6 +93,113 @@ export const QUESTIONS = [
   { cat: '¿Qué harías si…?', q: 'Tu suegra cae de sorpresa un domingo. Vos…', o: ['La recibo con mate', 'Me escondo un rato', 'Encantado/a, que se quede a comer', 'Depende de la suegra'] },
   { cat: '¿Qué harías si…?', q: 'Rompés algo que el otro quiere mucho. ¿Qué hacés?', o: ['Lo confieso enseguida', 'Intento arreglarlo antes de decir nada', 'Compro uno nuevo', 'Le echo la culpa al gato'] },
   { cat: '¿Qué harías si…?', q: 'Te podés teletransportar una vez, ahora mismo. ¿A dónde?', o: ['A una playa paradisíaca', 'A la casa de mi familia', 'A un recital', 'Al lado tuyo'] },
+  // ===== Banco v2 (desde BANK_V2_FROM). Agregar SOLO al final: el orden de las anteriores no se toca. =====
+  // --- comunicación ---
+  { cat: 'Comunicación', q: '¿Qué te sale mejor: pedir perdón o perdonar?', o: ['Pedir perdón', 'Perdonar', 'Las dos cosas', 'Ninguna, soy orgulloso/a'] },
+  { cat: 'Comunicación', q: 'Estás preocupado/a por algo del laburo. ¿Lo contás?', o: ['Sí, apenas llego', 'Cuando me preguntan', 'Solo si es grave', 'Me lo guardo para no cargar al otro'] },
+  { cat: 'Comunicación', q: 'Un “tenemos que hablar” te genera…', o: ['Pánico total', 'Curiosidad', 'Tranquilidad, hablar está bueno', 'Ganas de salir corriendo'] },
+  { cat: 'Comunicación', q: '¿Qué te gustaría que el otro te pregunte más seguido?', o: ['Cómo me fue en el día', 'Qué necesito', 'Qué estoy soñando', 'Si estoy bien de verdad'] },
+  { cat: 'Comunicación', q: 'Cuando el otro está enojado, vos…', o: ['Le pregunto qué le pasa', 'Le doy espacio', 'Trato de hacerlo reír', 'Me enojo yo también'] },
+  { cat: 'Comunicación', q: '¿Qué frase te desarma en una discusión?', o: ['“Tenés razón”', '“Te entiendo”', '“Perdoname”', '“Vení, abrazame”'] },
+  { cat: 'Comunicación', q: 'Un elogio que te encanta escuchar:', o: ['Qué lindo/a estás', 'Qué inteligente sos', 'Qué buena persona sos', 'Me hacés muy feliz'] },
+  { cat: 'Comunicación', q: 'Si pudieras cambiar algo de cómo discutimos:', o: ['Que no levantemos la voz', 'Que no dejemos pasar tanto tiempo', 'Que escuchemos más', 'Nada, discutimos bien'] },
+  { cat: 'Comunicación', q: '¿Cuánto te importa que te avisen si van a llegar tarde?', o: ['Muchísimo', 'Un poco', 'Nada, no me hago drama', 'Depende de cuán tarde'] },
+  { cat: 'Comunicación', q: 'Para decir algo difícil, ¿qué momento elegís?', o: ['Caminando juntos', 'En el auto', 'Antes de dormir', 'Con un mate de por medio'] },
+  // --- nosotros ---
+  { cat: 'Nosotros', q: '¿Cuál es “nuestra” canción?', o: ['Tenemos una y la sabemos los dos', 'Tenemos varias', 'Todavía no tenemos', 'Cada uno diría una distinta'] },
+  { cat: 'Nosotros', q: '¿Qué nos hace más reír juntos?', o: ['Los memes', 'Las cosas que nos pasan', 'Imitar a gente', 'Los chistes internos'] },
+  { cat: 'Nosotros', q: 'El momento del día que más disfrutás juntos:', o: ['El desayuno', 'La cena', 'Antes de dormir', 'Los fines de semana a la mañana'] },
+  { cat: 'Nosotros', q: '¿Qué hacemos mejor como equipo?', o: ['Organizar viajes', 'Resolver problemas', 'Cocinar', 'Hacernos reír'] },
+  { cat: 'Nosotros', q: '¿En qué nos parecemos más?', o: ['En el humor', 'En los valores', 'En los gustos', 'En lo cabezas duras'] },
+  { cat: 'Nosotros', q: '¿En qué somos más distintos?', o: ['En el orden', 'En la plata', 'En los horarios', 'En cómo enfrentamos los problemas'] },
+  { cat: 'Nosotros', q: 'Un apodo para el otro:', o: ['Algo tierno (amor, gordi, bebu)', 'Su nombre de siempre', 'Un apodo que solo entendemos nosotros', 'Depende del humor del día'] },
+  { cat: 'Nosotros', q: '¿Qué te gustaría que hagamos más seguido?', o: ['Salir a comer', 'Viajar', 'Quedarnos abrazados sin hacer nada', 'Ver amigos juntos'] },
+  { cat: 'Nosotros', q: 'Si nuestra relación fuera una película, sería…', o: ['Una comedia romántica', 'Una de aventuras', 'Un drama con final feliz', 'Una de esas que se repiten en la tele'] },
+  { cat: 'Nosotros', q: 'Lo que más admirás del otro:', o: ['Su paciencia', 'Su buen humor', 'Lo trabajador/a que es', 'Cómo trata a los demás'] },
+  { cat: 'Nosotros', q: '¿Quién es más romántico/a?', o: ['Yo', 'El otro', 'Los dos por igual', 'Ninguno, somos más de chistes'] },
+  { cat: 'Nosotros', q: '¿Quién se duerme primero viendo una peli?', o: ['Yo, siempre', 'El otro', 'Los dos a la vez', 'Ninguno, somos de terminarla'] },
+  // --- gustos ---
+  { cat: 'Gustos', q: '¿Mate dulce o amargo?', o: ['Amargo', 'Dulce', 'Con edulcorante', 'No tomo mate'] },
+  { cat: 'Gustos', q: 'Un domingo perfecto arranca con…', o: ['Facturas y mate', 'Dormir hasta el mediodía', 'Salir a correr', 'Desayuno en la cama'] },
+  { cat: 'Gustos', q: '¿Asado de qué no puede faltar?', o: ['Vacío', 'Chorizo y morcilla', 'Entraña', 'Provoleta (no es carne, pero bueno)'] },
+  { cat: 'Gustos', q: 'Helado: ¿qué gusto pedís sí o sí?', o: ['Dulce de leche granizado', 'Chocolate', 'Frutilla al agua', 'Siempre pruebo uno nuevo'] },
+  { cat: 'Gustos', q: '¿Serie o película?', o: ['Serie para maratonear', 'Película y a dormir', 'Documental', 'Lo que elija el otro'] },
+  { cat: 'Gustos', q: '¿Qué género te gana siempre?', o: ['Comedia', 'Terror', 'Romántica', 'Acción'] },
+  { cat: 'Gustos', q: 'Playa o montaña:', o: ['Playa', 'Montaña', 'Las dos en el mismo viaje', 'Ciudad, gracias'] },
+  { cat: 'Gustos', q: 'Frío o calor:', o: ['Frío, con manta', 'Calor, con pileta', 'Primavera, ni uno ni otro', 'Me quejo de los dos'] },
+  { cat: 'Gustos', q: '¿Empanadas fritas o al horno?', o: ['Fritas', 'Al horno', 'Me da igual mientras haya', 'Depende de quién las haga'] },
+  { cat: 'Gustos', q: 'Un recital al que irías sí o sí:', o: ['Rock nacional', 'Cumbia o cuarteto', 'Pop internacional', 'Algo bien tranqui, acústico'] },
+  { cat: 'Gustos', q: 'Para un regalo, preferís…', o: ['Algo útil', 'Una experiencia (viaje, cena)', 'Algo hecho a mano', 'Plata y me compro lo que quiero'] },
+  { cat: 'Gustos', q: '¿Cuál es tu comida de bajón?', o: ['Pizza', 'Hamburguesa', 'Milanesa con papas fritas', 'Algo dulce'] },
+  // --- día a día ---
+  { cat: 'Día a día', q: '¿Quién controla el control remoto?', o: ['Yo', 'El otro', 'Nos turnamos', 'Lo pierde siempre alguien'] },
+  { cat: 'Día a día', q: 'El lado de la cama:', o: ['Izquierdo', 'Derecho', 'El del medio (y molesto)', 'No me importa'] },
+  { cat: 'Día a día', q: '¿Cómo es tu despertar?', o: ['Me levanto con la primera alarma', 'Posponga, posponga, posponga', 'Me despierto solo/a sin alarma', 'Necesito café antes de hablar'] },
+  { cat: 'Día a día', q: 'Las compras del súper:', o: ['Con lista y en orden', 'Voy y veo qué hay', 'Por delivery', 'Que vaya el otro'] },
+  { cat: 'Día a día', q: 'Platos sucios en la pileta:', o: ['Se lavan al toque', 'Mañana los lavo', 'Que se remojen un rato', 'Lavavajillas y listo'] },
+  { cat: 'Día a día', q: '¿Qué hacés primero al llegar a casa?', o: ['Me cambio la ropa', 'Me tiro en el sillón', 'Abro la heladera', 'Busco al otro para saludarlo'] },
+  { cat: 'Día a día', q: 'El orden en casa es…', o: ['Fundamental', 'Importante, pero sin obsesión', 'Un caos organizado', 'Un tema de discusión'] },
+  { cat: 'Día a día', q: 'La temperatura del aire acondicionado:', o: ['Bien frío', 'Templado', 'Apagado, abro la ventana', 'Siempre discutimos esto'] },
+  { cat: 'Día a día', q: 'Antes de dormir, ¿qué hacés?', o: ['Scrolleo el celular', 'Leo un libro', 'Charlamos', 'Me duermo en dos minutos'] },
+  { cat: 'Día a día', q: '¿Quién es más puntual?', o: ['Yo', 'El otro', 'Los dos', 'Ninguno, llegamos tarde juntos'] },
+  // --- decisiones ---
+  { cat: 'Decisiones', q: 'Elegir dónde comer un sábado:', o: ['Decido yo rápido', 'Que decida el otro', 'Tardamos una hora', 'Vamos al lugar de siempre'] },
+  { cat: 'Decisiones', q: 'Una compra grande, ¿cómo la decidís?', o: ['Investigo semanas', 'Pregunto a todo el mundo', 'Me tiro de cabeza', 'La charlamos juntos'] },
+  { cat: 'Decisiones', q: 'Si hay que elegir entre ver a mi familia o a tus amigos…', o: ['Familia primero', 'Amigos esta vez', 'Hacemos las dos cosas', 'Nos quedamos en casa'] },
+  { cat: 'Decisiones', q: '¿Cómo decidimos qué serie ver?', o: ['Elige uno, mira el otro', 'Votación', 'Una cada uno', 'Pasamos media hora en el menú'] },
+  { cat: 'Decisiones', q: 'Si te ofrecen un laburo mejor en otra ciudad…', o: ['Lo charlamos y vemos', 'Lo agarro', 'No me iría', 'Solo si nos vamos juntos'] },
+  { cat: 'Decisiones', q: 'En un viaje, ¿planificar o improvisar?', o: ['Todo planificado', 'Improvisar', 'Lo básico planificado', 'Que planifique el otro'] },
+  { cat: 'Decisiones', q: '¿Cómo tomás decisiones importantes?', o: ['Con la cabeza', 'Con el corazón', 'Con una lista de pros y contras', 'Consultándolo con la almohada'] },
+  { cat: 'Decisiones', q: 'Si no nos ponemos de acuerdo, ¿qué hacemos?', o: ['Cede el que menos le importa', 'Nos turnamos', 'Buscamos una opción nueva', 'Piedra, papel o tijera'] },
+  // --- futuro ---
+  { cat: 'Futuro', q: '¿Cómo te imaginás de viejitos?', o: ['Viajando', 'En una casa con jardín', 'Con nietos alrededor', 'Igual que ahora, pero con canas'] },
+  { cat: 'Futuro', q: 'Un viaje que tenemos que hacer sí o sí:', o: ['El sur argentino', 'Europa', 'El Caribe', 'Japón o algún lugar lejos'] },
+  { cat: 'Futuro', q: '¿Casamiento?', o: ['Fiesta grande', 'Algo íntimo', 'Solo por civil', 'No hace falta'] },
+  { cat: 'Futuro', q: 'Algo que te gustaría construir juntos:', o: ['Una familia', 'Una casa', 'Un emprendimiento', 'Muchos recuerdos de viajes'] },
+  { cat: 'Futuro', q: 'Dentro de un año, ¿qué te gustaría haber logrado?', o: ['Ahorrar', 'Viajar', 'Mejorar la salud', 'Aprender algo nuevo'] },
+  { cat: 'Futuro', q: '¿Qué tradición te gustaría que tengamos?', o: ['Un viaje por año', 'Una cena especial por mes', 'Navidad siempre juntos', 'Festejar cada aniversario a lo grande'] },
+  // --- ¿qué harías si…? ---
+  { cat: '¿Qué harías si…?', q: 'Encontrás una billetera con plata en la calle. ¿Qué hacés?', o: ['Busco al dueño', 'La llevo a la comisaría', 'La dejo donde está', 'Me la quedo (no se lo digo a nadie)'] },
+  { cat: '¿Qué harías si…?', q: 'Nos quedamos encerrados en el ascensor una hora. Vos…', o: ['Mantengo la calma', 'Llamo a todo el mundo', 'Aprovecho para charlar', 'Entro en pánico'] },
+  { cat: '¿Qué harías si…?', q: 'Te invitan a un casamiento donde no conocés a nadie. ¿Qué hacés?', o: ['Me hago amigos en la mesa', 'Me quedo pegado/a al otro', 'Bailo toda la noche', 'Me voy temprano'] },
+  { cat: '¿Qué harías si…?', q: 'Tenés un superpoder por un día:', o: ['Volar', 'Leer la mente', 'Ser invisible', 'Teletransportarme'] },
+  { cat: '¿Qué harías si…?', q: 'Te quedás sin internet una semana. ¿Cómo sobrevivís?', o: ['Leo todo lo que tenía pendiente', 'Salgo más', 'Sufro mucho', 'Ni me doy cuenta'] },
+  { cat: '¿Qué harías si…?', q: 'El otro se olvida de tu cumpleaños. Vos…', o: ['Me hago el/la ofendido/a', 'Se lo recuerdo con humor', 'Me enojo en serio', 'Lo perdono si hay torta'] },
+  { cat: '¿Qué harías si…?', q: 'Podés cenar con cualquier persona famosa. ¿Con quién?', o: ['Un/a deportista', 'Un/a músico/a', 'Un/a actor o actriz', 'Alguien de la historia'] },
+  { cat: '¿Qué harías si…?', q: 'Nos regalan un viaje con salida mañana. ¿Qué hacés?', o: ['Armo la valija ya', 'Veo si puedo faltar al laburo', 'Lo dejo para otra fecha', 'Le pregunto mil cosas al otro'] },
+  { cat: '¿Qué harías si…?', q: 'Te dan a elegir: casa en la playa o en la montaña, gratis.', o: ['Playa', 'Montaña', 'La vendo y viajo', 'La que elija el otro'] },
+  { cat: '¿Qué harías si…?', q: 'Cae un amigo a las 2 de la mañana a contarte un problema.', o: ['Lo hago pasar y pongo la pava', 'Lo escucho en la puerta', 'Le digo que mañana hablamos', 'Despierto al otro para que me ayude'] },
+  // --- plata ---
+  { cat: 'Plata', q: '¿Sos más de ahorrar o de gastar?', o: ['Ahorrar', 'Gastar', 'Ahorro para después gastar', 'Depende del mes'] },
+  { cat: 'Plata', q: 'La plata en pareja:', o: ['Todo junto', 'Cada uno lo suyo', 'Un fondo común para gastos de la casa', 'Todavía no lo hablamos'] },
+  { cat: 'Plata', q: 'Te sobra un poco de plata a fin de mes. ¿Qué hacés?', o: ['La guardo', 'Me doy un gusto', 'La uso para algo de los dos', 'La invierto'] },
+  { cat: 'Plata', q: 'Una salida a comer, ¿quién paga?', o: ['Mitad y mitad', 'El que invita', 'Nos turnamos', 'El que tenga más ese mes'] },
+  { cat: 'Plata', q: '¿En qué no te importa gastar de más?', o: ['Comida rica', 'Viajes', 'Ropa', 'Tecnología'] },
+  { cat: 'Plata', q: 'Antes de comprar algo caro, ¿lo consultás con el otro?', o: ['Siempre', 'Si es muy caro', 'Casi nunca', 'Le aviso después'] },
+  { cat: 'Plata', q: 'Un gasto del otro que no entendés:', o: ['Ropa o zapatillas', 'Delivery', 'Cosas de tecnología', 'Ninguno, respeto'] },
+  // --- familia y amigos ---
+  { cat: 'Familia y amigos', q: 'Los domingos en familia:', o: ['Todos los domingos', 'Una vez por mes alcanza', 'Solo en fechas especiales', 'Prefiero domingos de a dos'] },
+  { cat: 'Familia y amigos', q: '¿Cuántos hijos te imaginás?', o: ['Ninguno', 'Uno', 'Dos', 'Tres o más'] },
+  { cat: 'Familia y amigos', q: 'Mis amigos y vos:', o: ['Se llevan bárbaro', 'Se toleran', 'Todavía se están conociendo', 'Mejor cada uno con los suyos'] },
+  { cat: 'Familia y amigos', q: 'Una juntada con amigos ideal:', o: ['Asado en una casa', 'Salir a un bar', 'Juegos de mesa', 'Una escapada de fin de semana'] },
+  { cat: 'Familia y amigos', q: 'Navidad y Año Nuevo:', o: ['Una con cada familia', 'Todo con mi familia', 'Todo con la tuya', 'Los dos solos, de viaje'] },
+  { cat: 'Familia y amigos', q: '¿A quién de tu familia se parece más el otro?', o: ['A mi mamá', 'A mi papá', 'A algún hermano/a', 'A nadie, es único/a'] },
+  { cat: 'Familia y amigos', q: 'Un consejo de tu familia que te sirvió en la pareja:', o: ['Nunca irse a dormir enojados', 'Elegir las peleas', 'Tener cosas propias', 'Reírse de uno mismo'] },
+  // --- recuerdos ---
+  { cat: 'Recuerdos', q: '¿Te acordás de nuestra primera cita?', o: ['Al detalle', 'Más o menos', 'Me acuerdo de lo que comimos', 'Mejor no preguntes'] },
+  { cat: 'Recuerdos', q: 'El viaje juntos que más recordás:', o: ['El primero', 'El más lejos', 'Una escapada corta', 'Todavía falta el mejor'] },
+  { cat: 'Recuerdos', q: '¿Quién dijo “te quiero” primero?', o: ['Yo', 'El otro', 'Los dos a la vez', 'No me acuerdo (y debería)'] },
+  { cat: 'Recuerdos', q: 'Un momento en que el otro te sorprendió:', o: ['Con un regalo', 'Cuando estuve mal', 'En un viaje', 'Todavía lo estoy esperando'] },
+  { cat: 'Recuerdos', q: 'De chico/a soñabas con ser…', o: ['Deportista', 'Artista', 'Médico/a o maestro/a', 'Algo que me da vergüenza decir'] },
+  { cat: 'Recuerdos', q: 'La primera impresión que te dio el otro:', o: ['Me pareció lindo/a', 'Me pareció tímido/a', 'Me hizo reír', 'No me cayó tan bien al principio'] },
+  // --- picante (suave) ---
+  { cat: 'Picante 🌶️', q: '¿Mañana, tarde o noche?', o: ['Mañana', 'Siesta', 'Noche', 'Cuando surja'] },
+  { cat: 'Picante 🌶️', q: 'Lo que más te gusta para empezar:', o: ['Besos', 'Masajes', 'Una charla con onda', 'Que me sorprendan'] },
+  { cat: 'Picante 🌶️', q: 'Una cita romántica ideal:', o: ['Cena con velas', 'Escapada a un hotel', 'Noche en casa sin celulares', 'Bailar juntos'] },
+  { cat: 'Picante 🌶️', q: '¿Qué te parece más sexy del otro?', o: ['Su sonrisa', 'Su mirada', 'Su voz', 'Su forma de ser'] },
+  { cat: 'Picante 🌶️', q: 'Probar algo nuevo en la intimidad te parece…', o: ['Divertido', 'Bien, si lo charlamos antes', 'Me da un poco de vergüenza', 'Prefiero lo que ya conocemos'] },
+  { cat: 'Picante 🌶️', q: 'Un mensaje subido de tono en medio del día:', o: ['Me encanta', 'Me pone nervioso/a', 'Depende de dónde esté', 'Mejor en persona'] },
+  { cat: 'Picante 🌶️', q: 'Después de una pelea, ¿la reconciliación?', o: ['Con un abrazo largo', 'Con una charla', 'Con algo más… 😏', 'Con comida rica'] },
 ];
 
 /** Generador pseudoaleatorio con semilla (mulberry32): mismo resultado en los dos teléfonos. */
@@ -100,9 +218,9 @@ function seeded(seedText) {
   };
 }
 
-/** Orden propio de cada pareja (mezcla con semilla = id del vínculo). */
-function orderFor(pairId) {
-  const idx = QUESTIONS.map((_, i) => i);
+/** Orden propio de cada pareja (mezcla con semilla = id del vínculo) sobre las primeras `size` preguntas. */
+function orderFor(pairId, size) {
+  const idx = Array.from({ length: size }, (_, i) => i);
   const rnd = seeded(pairId || 'mydays');
   for (let i = idx.length - 1; i > 0; i--) {
     const j = Math.floor(rnd() * (i + 1));
@@ -112,14 +230,31 @@ function orderFor(pairId) {
 }
 
 /** Las 5 preguntas del día. Recorre el banco en orden: no se repiten hasta haberlas usado todas. */
+export function bankFor(date) {
+  return BANKS.reduce((cur, b) => (date >= b.from ? b : cur), BANKS[0]);
+}
+
 export function questionsFor(pairId, date) {
-  const order = orderFor(pairId);
-  const day = diffDays(date, '2026-01-01');
+  const bank = bankFor(date);
+  const order = orderFor(pairId, bank.size);
+  const day = diffDays(date, bank.from);
   const start = ((day * QUESTIONS_PER_DAY) % order.length + order.length) % order.length;
   return Array.from({ length: QUESTIONS_PER_DAY }, (_, i) => {
     const id = order[(start + i) % order.length];
     return { id, ...QUESTIONS[id] };
   });
+}
+
+/** Ids de las preguntas del día: viajan con las respuestas para comprobar que los dos respondieron lo mismo. */
+export const questionIds = (pairId, date) => questionsFor(pairId, date).map((q) => q.id);
+
+/**
+ * ¿Las respuestas del otro son de las mismas preguntas? Si su app es de otra versión del banco, no.
+ * Sin ids (app vieja) solo confiamos en las fechas del banco original.
+ */
+export function sameQuestions(theirIds, pairId, date) {
+  if (Array.isArray(theirIds)) return theirIds.join(',') === questionIds(pairId, date).join(',');
+  return bankFor(date) === BANKS[0];
 }
 
 export function compare(mine, theirs) {
@@ -138,5 +273,6 @@ export function syncLabel(matches) {
 export function quizStatus(entry) {
   if (!entry?.mine) return 'todo';
   if (!entry.theirs) return 'waiting';
+  if (entry.mismatch) return 'mismatch';
   return 'done';
 }
