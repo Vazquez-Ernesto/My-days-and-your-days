@@ -46,41 +46,59 @@ describe('cuestionario en pareja', () => {
   });
 });
 
-import { BANKS, bankFor, questionIds, sameQuestions } from './quiz.js';
+import { BANKS, ROUNDS_FROM, ROUND_SEGMENTS, questionIds, sameQuestions, questionsForRound, currentQuizKey, roundKey, roundOf } from './quiz.js';
 import snapshot from './quiz.v1-snapshot.json';
 
-describe('banco de preguntas por versiones', () => {
-  it('hasta el cambio de banco, las preguntas del día son EXACTAMENTE las de antes', () => {
+const both = (completedOn) => ({ mine: [0, 0, 0, 0, 0], theirs: [1, 1, 1, 1, 1], completedOn });
+
+describe('banco original (por fecha) y rondas', () => {
+  it('antes de las rondas, las preguntas del día son EXACTAMENTE las de antes', () => {
     for (const [key, ids] of Object.entries(snapshot)) {
       const [pair, date] = key.split('|');
-      if (date < BANKS[1].from) expect(questionIds(pair, date), key).toEqual(ids);
+      if (date < ROUNDS_FROM) expect(questionIds(pair, date), key).toEqual(ids);
     }
   });
 
-  it('cada versión del banco abarca preguntas que existen', () => {
-    expect(BANKS.at(-1).size).toBe(QUESTIONS.length);
-    for (let i = 1; i < BANKS.length; i++) {
-      expect(BANKS[i].size).toBeGreaterThan(BANKS[i - 1].size);
-      expect(BANKS[i].from > BANKS[i - 1].from).toBe(true);
-    }
+  it('los tramos de las rondas cubren todo el banco, sin huecos ni repetidas', () => {
+    const covered = ROUND_SEGMENTS.flatMap(([a, b]) => Array.from({ length: b - a }, (_, i) => a + i)).sort((x, y) => x - y);
+    expect(covered).toEqual(QUESTIONS.map((_, i) => i));
+    expect(BANKS[0].size).toBe(64);
   });
 
-  it('desde el banco nuevo aparecen preguntas nuevas y no se repiten hasta usarlas todas', () => {
-    expect(bankFor('2026-11-24')).toBe(BANKS[0]);
-    expect(bankFor('2026-11-25')).toBe(BANKS[1]);
-    const days = Math.floor(QUESTIONS.length / QUESTIONS_PER_DAY);
+  it('las rondas recorren primero las preguntas nuevas y no repiten hasta usar todo el banco', () => {
+    const rounds = Math.floor(QUESTIONS.length / QUESTIONS_PER_DAY);
     const ids = [];
-    for (let d = 0; d < days; d++) ids.push(...questionIds('pair-123', addDays('2026-11-25', d)));
+    for (let n = 0; n < rounds; n++) ids.push(...questionsForRound('pair-123', n).map((q) => q.id));
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.some((id) => id >= BANKS[0].size)).toBe(true);
+    expect(ids.slice(0, 95).every((id) => id >= 64)).toBe(true); // las 95 nuevas primero
+    expect(questionsForRound('pair-123', 3)).toEqual(questionsForRound('pair-123', 3)); // las dos personas, iguales
+    expect(questionsForRound('pair-A', 0)).not.toEqual(questionsForRound('pair-B', 0));
+  });
+
+  it('si no responden, las preguntas NO se pierden: la ronda sigue abierta los días que haga falta', () => {
+    expect(currentQuizKey({}, '2026-11-24')).toBe('2026-11-24'); // todavía banco por fecha
+    expect(currentQuizKey({}, '2026-11-25')).toBe('r0');
+    expect(currentQuizKey({}, '2026-12-10')).toBe('r0'); // pasaron días sin responder: sigue la ronda 1
+    expect(currentQuizKey({ r0: { mine: [0, 0, 0, 0, 0] } }, '2026-12-10')).toBe('r0'); // solo uno respondió
+  });
+
+  it('la ronda avanza al día siguiente de que respondan los dos (ese día ven los resultados)', () => {
+    expect(currentQuizKey({ r0: both('2026-11-26') }, '2026-11-26')).toBe('r0');
+    expect(currentQuizKey({ r0: both('2026-11-26') }, '2026-11-27')).toBe('r1');
+    expect(currentQuizKey({ r0: both('2026-11-26'), r1: both('2026-11-30') }, '2026-12-05')).toBe('r2');
+  });
+
+  it('claves de ronda', () => {
+    expect(roundKey(4)).toBe('r4');
+    expect(roundOf('r4')).toBe(4);
+    expect(roundOf('2026-11-25')).toBeNull();
   });
 
   it('detecta si el otro respondió otras preguntas (app de otra versión)', () => {
-    const date = '2026-11-26';
-    expect(sameQuestions(questionIds('p', date), 'p', date)).toBe(true);
-    expect(sameQuestions([0, 1, 2, 3, 4], 'p', date)).toBe(questionIds('p', date).join() === '0,1,2,3,4');
-    expect(sameQuestions(undefined, 'p', '2026-11-20')).toBe(true);  // app vieja, banco viejo: mismas preguntas
-    expect(sameQuestions(undefined, 'p', '2026-11-26')).toBe(false); // app vieja, banco nuevo: no comparamos
+    expect(sameQuestions(questionIds('p', 'r2'), 'p', 'r2')).toBe(true);
+    expect(sameQuestions(questionIds('p', 'r1'), 'p', 'r2')).toBe(false);
+    expect(sameQuestions(undefined, 'p', '2026-11-20')).toBe(true);  // app vieja, banco original: mismas preguntas
+    expect(sameQuestions(undefined, 'p', 'r0')).toBe(false);         // app vieja no conoce las rondas
   });
 
   it('las preguntas están en castellano rioplatense (voseo, sin "tú")', () => {
@@ -97,8 +115,11 @@ import { parseQuizMessage } from './quiz.js';
 describe('mensajes del cuestionario que llegan de la pareja', () => {
   const ok = { type: 'quiz', date: '2026-11-26', answers: [0, 1, 2, 3, 0], name: 'Leo', questions: [1, 2, 3, 4, 5] };
 
-  it('acepta un mensaje bien formado', () => {
-    expect(parseQuizMessage(ok)).toEqual({ date: '2026-11-26', answers: [0, 1, 2, 3, 0], name: 'Leo', questions: [1, 2, 3, 4, 5] });
+  it('acepta un mensaje bien formado (por fecha o por ronda)', () => {
+    expect(parseQuizMessage(ok)).toEqual({ key: '2026-11-26', answers: [0, 1, 2, 3, 0], name: 'Leo', questions: [1, 2, 3, 4, 5] });
+    expect(parseQuizMessage({ ...ok, date: undefined, round: 3 }).key).toBe('r3');
+    expect(parseQuizMessage({ ...ok, date: undefined, round: -1 })).toBeNull();
+    expect(parseQuizMessage({ ...ok, date: undefined, round: 1.5 })).toBeNull();
   });
 
   it.each([

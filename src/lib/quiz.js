@@ -5,14 +5,29 @@ import { diffDays } from './dates.js';
 export const QUESTIONS_PER_DAY = 5;
 
 /**
- * Versiones del banco. El orden de cada pareja sale de mezclar el banco, así que agregar preguntas
- * cambiaría las del día: por eso cada versión rige desde una fecha y las anteriores quedan congeladas.
- * Para sumar preguntas: agregarlas AL FINAL de QUESTIONS y sumar una versión con fecha futura
- * (unos días de margen para que los dos teléfonos se actualicen).
+ * Banco original (por fecha): hasta ROUNDS_FROM, las 5 preguntas salen de la fecha. Quedó congelado
+ * para que el historial y las respuestas de esos días no cambien.
  */
 export const BANKS = [
   { from: '2026-01-01', size: 64 },
-  { from: '2026-11-25', size: 159 },
+];
+
+/**
+ * Desde ROUNDS_FROM el cuestionario va por RONDAS: las 5 preguntas siguen abiertas hasta que respondan
+ * los dos (no vencen a medianoche) y la ronda siguiente aparece al día siguiente de completarla.
+ * Así nunca se pierde una pregunta. El número de ronda viaja con las respuestas, por eso los dos
+ * teléfonos siempre están en la misma ronda aunque uno se entere más tarde.
+ */
+export const ROUNDS_FROM = '2026-11-25';
+
+/**
+ * Tramos del banco para las rondas, en el orden en que se recorren. Cada tramo se mezcla por separado,
+ * así agregar preguntas nunca cambia las rondas anteriores.
+ * Para sumar preguntas: agregarlas AL FINAL de QUESTIONS y sumar un tramo [desde, hasta) al final.
+ */
+export const ROUND_SEGMENTS = [
+  [64, 159], // primero las nuevas
+  [0, 64],   // después las del banco original
 ];
 
 export const QUESTIONS = [
@@ -218,10 +233,10 @@ function seeded(seedText) {
   };
 }
 
-/** Orden propio de cada pareja (mezcla con semilla = id del vínculo) sobre las primeras `size` preguntas. */
-function orderFor(pairId, size) {
-  const idx = Array.from({ length: size }, (_, i) => i);
-  const rnd = seeded(pairId || 'mydays');
+/** Mezcla determinística (Fisher-Yates con semilla). */
+function shuffled(items, seed) {
+  const idx = [...items];
+  const rnd = seeded(seed);
   for (let i = idx.length - 1; i > 0; i--) {
     const j = Math.floor(rnd() * (i + 1));
     [idx[i], idx[j]] = [idx[j], idx[i]];
@@ -229,7 +244,50 @@ function orderFor(pairId, size) {
   return idx;
 }
 
-/** Las 5 preguntas del día. Recorre el banco en orden: no se repiten hasta haberlas usado todas. */
+/** Orden propio de cada pareja (mezcla con semilla = id del vínculo) sobre las primeras `size` preguntas. */
+function orderFor(pairId, size) {
+  return shuffled(Array.from({ length: size }, (_, i) => i), pairId || 'mydays');
+}
+
+/** Orden de las rondas: cada tramo mezclado por separado y uno detrás del otro. */
+function roundOrder(pairId) {
+  return ROUND_SEGMENTS.flatMap(([from, to], i) =>
+    shuffled(Array.from({ length: to - from }, (_, k) => from + k), `${pairId || 'mydays'}:${i}`));
+}
+
+const ROUND_KEY = /^r(\d{1,5})$/;
+/** Clave de una ronda en quiz.days ("r0", "r1"…). Los días del banco original usan la fecha. */
+export const roundKey = (n) => `r${n}`;
+export const roundOf = (key) => (ROUND_KEY.test(key) ? Number(ROUND_KEY.exec(key)[1]) : null);
+
+/** Las 5 preguntas de la ronda n. */
+export function questionsForRound(pairId, n) {
+  const order = roundOrder(pairId);
+  const start = (n * QUESTIONS_PER_DAY) % order.length;
+  return Array.from({ length: QUESTIONS_PER_DAY }, (_, i) => {
+    const id = order[(start + i) % order.length];
+    return { id, ...QUESTIONS[id] };
+  });
+}
+
+/**
+ * Qué cuestionario toca hoy: la fecha (banco original) o la ronda actual.
+ * La ronda avanza recién al día siguiente de que la respondan los dos (así ven los resultados ese día).
+ */
+export function currentQuizKey(days, today) {
+  if (today < ROUNDS_FROM) return today;
+  let n = 0;
+  while (days[roundKey(n)]?.mine && days[roundKey(n)]?.theirs && days[roundKey(n)].completedOn < today) n++;
+  return roundKey(n);
+}
+
+/** Preguntas de un cuestionario (por fecha o por ronda). */
+export function questionsForKey(pairId, key) {
+  const n = roundOf(key);
+  return n === null ? questionsFor(pairId, key) : questionsForRound(pairId, n);
+}
+
+/** Las 5 preguntas de una fecha (banco original). Recorre el banco en orden: no se repiten hasta usarlas todas. */
 export function bankFor(date) {
   return BANKS.reduce((cur, b) => (date >= b.from ? b : cur), BANKS[0]);
 }
@@ -252,26 +310,28 @@ export function questionsFor(pairId, date) {
  */
 export function parseQuizMessage(p) {
   const date = typeof p?.date === 'string' ? /^\d{4}-\d{2}-\d{2}$/.exec(p.date)?.[0] : null;
-  if (!date || !Array.isArray(p.answers) || p.answers.length !== QUESTIONS_PER_DAY) return null;
+  const round = Number.isInteger(p?.round) && p.round >= 0 && p.round < 100000 ? roundKey(p.round) : null;
+  const key = round ?? date;
+  if (!key || !Array.isArray(p.answers) || p.answers.length !== QUESTIONS_PER_DAY) return null;
   const answers = p.answers.map((a) => (Number.isInteger(a) && a >= 0 && a <= 3 ? Number(a) : null));
   if (answers.includes(null)) return null;
   const name = typeof p.name === 'string' ? p.name.replace(/[\u0000-\u001f]/g, '').slice(0, 40) : '';
   const questions = Array.isArray(p.questions) && p.questions.length === QUESTIONS_PER_DAY
     && p.questions.every((q) => Number.isInteger(q) && q >= 0 && q < QUESTIONS.length)
     ? p.questions.map(Number) : undefined;
-  return { date, answers, name, questions };
+  return { key, answers, name, questions };
 }
 
 /** Ids de las preguntas del día: viajan con las respuestas para comprobar que los dos respondieron lo mismo. */
-export const questionIds = (pairId, date) => questionsFor(pairId, date).map((q) => q.id);
+export const questionIds = (pairId, key) => questionsForKey(pairId, key).map((q) => q.id);
 
 /**
  * ¿Las respuestas del otro son de las mismas preguntas? Si su app es de otra versión del banco, no.
  * Sin ids (app vieja) solo confiamos en las fechas del banco original.
  */
-export function sameQuestions(theirIds, pairId, date) {
-  if (Array.isArray(theirIds)) return theirIds.join(',') === questionIds(pairId, date).join(',');
-  return bankFor(date) === BANKS[0];
+export function sameQuestions(theirIds, pairId, key) {
+  if (Array.isArray(theirIds)) return theirIds.join(',') === questionIds(pairId, key).join(',');
+  return roundOf(key) === null; // una app vieja (sin ids) solo puede haber respondido el banco original
 }
 
 export function compare(mine, theirs) {

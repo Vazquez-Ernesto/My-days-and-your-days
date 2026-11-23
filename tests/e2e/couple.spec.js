@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { App, seed } from './helpers.js';
+import { App, seed, freezeDate } from './helpers.js';
 
 /**
  * Prueba de punta a punta del modo pareja con DOS navegadores (el teléfono de ella y el de él)
@@ -255,5 +255,56 @@ test.describe('modo pareja real (ella ↔ servidor ↔ él)', () => {
       await expect(him.getByText('Compartiendo con Ana')).toBeVisible({ timeout: 1500 });
     }).toPass({ timeout: 20_000 });
     await expect(himApp.ringBig).toBeVisible();
+  });
+
+  test('cuestionario por rondas: si uno responde días después, le tocan las mismas preguntas', async ({ browser }) => {
+    const { her, him, herApp, himApp } = await openPhones(browser);
+    const link = await createInvite(her, herApp);
+    await joinWith(him, himApp, link);
+    await expect(him.getByText('¡Listo, ya están vinculados! 💞')).toBeVisible();
+    // ya vinculados, "viajamos" a una fecha con rondas (la invitación ya no importa)
+    await freezeDate(her, '2026-11-27');
+    await freezeDate(him, '2026-11-27');
+    await her.reload();
+    await him.reload();
+
+    // Ella responde la ronda 1 el 27/11
+    await her.getByRole('button', { name: 'Cuestionario en pareja' }).click();
+    await expect(her.getByRole('heading', { name: 'Ronda 1' })).toBeVisible();
+    await her.getByRole('button', { name: 'Empezar' }).click();
+    const herQuestions = [];
+    for (let i = 0; i < 5; i++) {
+      herQuestions.push(await her.locator('.quiz__question').textContent());
+      await her.locator('.quiz__option').nth(i % 4).click();
+    }
+    await expect(her.getByText(/Cuando .* responda, te avisamos/)).toBeVisible();
+
+    // Él recién entra dos días después: la ronda sigue abierta, con LAS MISMAS preguntas
+    await freezeDate(him, '2026-11-29');
+    await him.reload();
+    await him.getByRole('button', { name: 'Cuestionario en pareja' }).click();
+    await expect(him.getByRole('heading', { name: 'Ronda 1' })).toBeVisible();
+    await him.getByRole('button', { name: 'Empezar' }).click();
+    for (let i = 0; i < 5; i++) {
+      await expect(him.locator('.quiz__question')).toHaveText(herQuestions[i]);
+      await him.locator('.quiz__option').nth(i % 4).click();
+    }
+    await expect(him.getByText('Coincidieron en 5 de 5')).toBeVisible({ timeout: 20_000 });
+
+    // A ella también le llegan los resultados (con las mismas preguntas: no hay aviso de versiones distintas)
+    await expect(async () => {
+      await her.reload();
+      await her.getByRole('button', { name: 'Cuestionario en pareja' }).click();
+      await expect(her.getByText('Coincidieron en 5 de 5')).toBeVisible({ timeout: 1500 });
+    }).toPass({ timeout: 25_000 });
+    expect((await herApp.savedState()).quiz.days.r0).toMatchObject({ mine: [0, 1, 2, 3, 0], theirs: [0, 1, 2, 3, 0] });
+
+    // Al día siguiente de completarla, aparece la ronda 2 con preguntas nuevas
+    await freezeDate(him, '2026-11-30');
+    await him.reload();
+    await him.getByRole('button', { name: 'Cuestionario en pareja' }).click();
+    await expect(him.getByRole('heading', { name: 'Ronda 2' })).toBeVisible();
+    await him.getByRole('button', { name: 'Empezar' }).click();
+    await expect(him.locator('.quiz__question')).not.toHaveText(herQuestions[0]);
   });
 });
