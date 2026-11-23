@@ -245,6 +245,23 @@ export function questionsFor(pairId, date) {
   });
 }
 
+/**
+ * Valida un mensaje de cuestionario que llega de la pareja antes de guardarlo.
+ * Aunque viaja cifrado, no confiamos en su forma: armamos valores nuevos y descartamos lo que no encaja.
+ * Devuelve { date, answers, name, questions } o null.
+ */
+export function parseQuizMessage(p) {
+  const date = typeof p?.date === 'string' ? /^\d{4}-\d{2}-\d{2}$/.exec(p.date)?.[0] : null;
+  if (!date || !Array.isArray(p.answers) || p.answers.length !== QUESTIONS_PER_DAY) return null;
+  const answers = p.answers.map((a) => (Number.isInteger(a) && a >= 0 && a <= 3 ? Number(a) : null));
+  if (answers.includes(null)) return null;
+  const name = typeof p.name === 'string' ? p.name.replace(/[\u0000-\u001f]/g, '').slice(0, 40) : '';
+  const questions = Array.isArray(p.questions) && p.questions.length === QUESTIONS_PER_DAY
+    && p.questions.every((q) => Number.isInteger(q) && q >= 0 && q < QUESTIONS.length)
+    ? p.questions.map(Number) : undefined;
+  return { date, answers, name, questions };
+}
+
 /** Ids de las preguntas del día: viajan con las respuestas para comprobar que los dos respondieron lo mismo. */
 export const questionIds = (pairId, date) => questionsFor(pairId, date).map((q) => q.id);
 

@@ -8,7 +8,7 @@ import { encryptJSON, decryptJSON, fingerprint } from './crypto.js';
 import { buildSnapshot } from './partner.js';
 import { storeKeys, syncSchedule } from './push.js';
 import { SYNC_INTERVAL_MS } from './config.js';
-import { questionIds } from './quiz.js';
+import { questionIds, parseQuizMessage } from './quiz.js';
 
 const GONE = ['PAIR_NOT_FOUND', 'NOT_A_MEMBER', 'NO_PAIR'];
 
@@ -62,7 +62,8 @@ async function readMessages(api, { state, receiveQuiz }, since) {
     try {
       const p = await decryptJSON(c.key, m);
       if (p.type === 'reply') replies.push({ text: p.text, name: p.name || '', at: m.createdAt });
-      if (p.type === 'quiz' && Array.isArray(p.answers)) receiveQuiz(p.date, p.answers, p.name, p.questions);
+      const quiz = p.type === 'quiz' ? parseQuizMessage(p) : null; // validado: no guardamos cualquier cosa
+      if (quiz) receiveQuiz(quiz.date, quiz.answers, quiz.name, quiz.questions);
     } catch { /* mensaje ilegible: lo ignoramos */ }
   }
   return { replies, last: msgs.at(-1)?.createdAt ?? null };

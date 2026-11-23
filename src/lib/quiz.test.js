@@ -91,3 +91,32 @@ describe('banco de preguntas por versiones', () => {
     }
   });
 });
+
+import { parseQuizMessage } from './quiz.js';
+
+describe('mensajes del cuestionario que llegan de la pareja', () => {
+  const ok = { type: 'quiz', date: '2026-11-26', answers: [0, 1, 2, 3, 0], name: 'Leo', questions: [1, 2, 3, 4, 5] };
+
+  it('acepta un mensaje bien formado', () => {
+    expect(parseQuizMessage(ok)).toEqual({ date: '2026-11-26', answers: [0, 1, 2, 3, 0], name: 'Leo', questions: [1, 2, 3, 4, 5] });
+  });
+
+  it.each([
+    ['fecha rara', { ...ok, date: '26/11/2026' }],
+    ['fecha con basura', { ...ok, date: '2026-11-26"><script>' }],
+    ['respuestas de menos', { ...ok, answers: [0, 1] }],
+    ['respuesta fuera de rango', { ...ok, answers: [0, 1, 2, 3, 9] }],
+    ['respuesta que no es número', { ...ok, answers: [0, 1, 2, 3, '0'] }],
+    ['sin respuestas', { ...ok, answers: undefined }],
+  ])('descarta: %s', (_, msg) => {
+    expect(parseQuizMessage(msg)).toBeNull();
+  });
+
+  it('limpia el nombre e ignora ids inválidos', () => {
+    const r = parseQuizMessage({ ...ok, name: `Leo\u0000${'x'.repeat(100)}`, questions: [1, 2, 3, 4, 99999] });
+    expect(r.name).toHaveLength(40);
+    expect(r.name.startsWith('Leo')).toBe(true);
+    expect(r.questions).toBeUndefined();
+    expect(parseQuizMessage({ ...ok, name: 42 }).name).toBe('');
+  });
+});
