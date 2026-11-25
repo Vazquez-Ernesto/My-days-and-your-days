@@ -1,11 +1,15 @@
 name: Mantener despierto el servidor
 
 # El plan gratis de Render duerme el servidor tras 15 min sin tráfico, y dormido no puede
-# mandar los recordatorios programados. Cada 5 minutos (el mínimo de GitHub) le "tocamos la puerta":
-# GitHub suele demorar estas tareas (se vieron huecos de 16 min con */10), así que con */5 queda margen.
+# mandar los recordatorios programados. Cada 5 minutos (el mínimo de GitHub) le "tocamos la puerta".
+#
+# OJO con las horas gratis: Render da 750 horas por mes por cuenta y, si se acaban, SUSPENDE el
+# servicio hasta el mes siguiente (pasó el 25/11/2026 con el ping las 24 horas). Por eso solo lo
+# mantenemos despierto de 07:00 a 01:00 de Argentina (10:00–03:59 UTC): ~18 h × 31 = ~560 h/mes.
+# De madrugada duerme; un aviso programado en ese horario sale cuando despierta (~07:00).
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/5 10-23,0-3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,8 +19,15 @@ jobs:
     steps:
       - name: Despertar mydays-server
         run: |
+          URL=https://mydays-server.onrender.com/actuator/health
           for i in 1 2 3; do
-            if curl -fsS --max-time 90 https://mydays-server.onrender.com/actuator/health; then exit 0; fi
+            # Render suspendido: no tiene sentido reintentar. Avisamos UNA vez por día (en la primera
+            # corrida de la mañana, que falla y manda mail); el resto del día solo deja una advertencia.
+            if curl -sS --max-time 30 -D - -o /dev/null "$URL" | grep -qi '^x-render-routing: suspend'; then
+              echo "::warning title=Render suspendió el servidor::Revisá Render → Billing (¿se acabaron las horas gratis del mes?)."
+              case "$(date -u +%H:%M)" in 10:0*|10:1*) exit 1 ;; *) exit 0 ;; esac
+            fi
+            if curl -fsS --max-time 90 "$URL"; then exit 0; fi
             sleep 20
           done
           exit 1
